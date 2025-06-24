@@ -1,0 +1,627 @@
+/* New Tab Page Styles - Minimalist Literature Theme with Dark Mode */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&display=swap');
+
+/* CSS Variables for theme support */
+:root {
+  --theme-primary: #fdfdf8;
+  --theme-secondary: #f5f5f0;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Light mode (default) */
+body {
+  font-family: 'Cormorant Garamond', serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+  background: var(--theme-primary, #fdfdf8);
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --theme-primary: #0f0f0f;
+    --theme-secondary: #1a1a1a;
+  }
+  
+  body {
+    background: var(--theme-primary, #0f0f0f);
+  }
+}
+
+/* Theme-specific overrides */
+.newtab-container[data-theme="sepia"] {
+  --theme-primary: #f5f1e8;
+  --theme-secondary: #ede4d3;
+}
+
+@media (prefers-color-scheme: dark) {
+  .newtab-container[data-theme="sepia"] {
+    --theme-primary: #2a2218;
+    --theme-secondary: #342b1f;
+  }
+}
+
+.newtab-container[data-theme="sage"] {
+  --theme-primary: #f2f5f1;
+  --theme-secondary: #e6ebe4;
+}
+
+@media (prefers-color-scheme: dark) {
+  .newtab-container[data-theme="sage"] {
+    --theme-primary: #1a2118;
+    --theme-secondary: #242d21;
+  }
+}
+
+.newtab-container[data-theme="rose"] {
+  --theme-primary: #f5f1f2;
+  --theme-secondary: #ebe4e6;
+}
+
+@media (prefers-color-scheme: dark) {
+  .newtab-container[data-theme="rose"] {
+    --theme-primary: #2a1a1c;
+    --theme-secondary: #342024;
+  }
+}
+
+.newtab-container {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--theme-primary, #fdfdf8);
+}
+
+.background-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, 
+    var(--theme-primary, #fdfdf8) 0%, 
+    var(--theme-secondary, #f5f5f0) 25%, 
+    var(--theme-primary, #fdfdf8) 50%, 
+    var(--theme-secondary, #f5f5f0) 75%, 
+    var(--theme-primary, #fdfdf8) 100%
+  );
+  background-size: 400% 400%;
+  animation: gradientShift 30s ease infinite;
+  z-index: -2;
+}
+
+/* Dark mode background */
+@media (prefers-color-scheme: dark) {
+  .background-gradient {
+    background: linear-gradient(135deg, 
+      #1a1a1a 0%, 
+      #202020 25%, 
+      #171717 50%, 
+      #202020 75%, 
+      #1a1a1a 100%
+    );
+  }
+}
+
+/* Add a subtle paper texture overlay */
+.background-gradient::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    radial-gradient(circle at 1px 1px, rgba(0,0,0,0.02) 1px, transparent 0);
+  background-size: 30px 30px;
+  opacity: 0.5;
+  z-index: -1;
+}
+
+/* Dark mode texture */
+@media (prefers-color-scheme: dark) {
+  .background-gradient::before {
+    background: 
+      radial-gradient(circle at 1px 1px, rgba(255,255,255,0.03) 1px, transparent 0);
+    opacity: 0.3;
+  }
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #2c2c2c;
+  z-index: 1;
+  max-width: 900px;
+  padding: 40px;
+  position: relative;
+}
+
+/* Dark mode content */
+@media (prefers-color-scheme: dark) {
+  .content {
+    color: #e8e8e8;
+  }
+}
+
+/* Quote Section - Main Focus */
+.quote-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100vh;
+}
+
+.quote-display {
+  max-width: 800px;
+  animation: fadeIn 1.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.quote-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 3.5rem;
+  line-height: 1.4;
+  font-weight: 400;
+  font-style: italic;
+  margin-bottom: 40px;
+  color: #2c2c2c;
+  position: relative;
+  letter-spacing: 0.5px;
+}
+
+/* Dark mode quote text */
+@media (prefers-color-scheme: dark) {
+  .quote-text {
+    color: #e8e8e8;
+  }
+}
+
+/* Minimal quote marks */
+.quote-text::before {
+  content: '"';
+  font-size: 5rem;
+  position: absolute;
+  top: -20px;
+  left: -40px;
+  opacity: 0.15;
+  font-family: 'Cormorant Garamond', serif;
+  line-height: 1;
+  color: #666;
+}
+
+.quote-text::after {
+  content: '"';
+  font-size: 5rem;
+  position: absolute;
+  bottom: -50px;
+  right: -40px;
+  opacity: 0.15;
+  font-family: 'Cormorant Garamond', serif;
+  line-height: 1;
+  color: #666;
+}
+
+/* Dark mode quote marks */
+@media (prefers-color-scheme: dark) {
+  .quote-text::before,
+  .quote-text::after {
+    color: #888;
+  }
+}
+
+.quote-author {
+  display: block;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.8rem;
+  font-weight: 500;
+  margin-bottom: 12px;
+  color: #4a4a4a;
+  letter-spacing: 1px;
+}
+
+/* Dark mode author */
+@media (prefers-color-scheme: dark) {
+  .quote-author {
+    color: #b8b8b8;
+  }
+}
+
+.quote-source {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1rem;
+  font-style: italic;
+  color: #888;
+  font-weight: 300;
+  letter-spacing: 0.5px;
+}
+
+/* Dark mode source */
+@media (prefers-color-scheme: dark) {
+  .quote-source {
+    color: #777;
+  }
+}
+
+/* Loading */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #666;
+}
+
+/* Dark mode loading */
+@media (prefers-color-scheme: dark) {
+  .loading {
+    color: #999;
+  }
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid #e0e0e0;
+  border-top: 2px solid #888;
+  border-radius: 50%;
+  animation: spin 1.5s linear infinite;
+  margin-bottom: 24px;
+}
+
+/* Dark mode spinner */
+@media (prefers-color-scheme: dark) {
+  .spinner {
+    border: 2px solid #404040;
+    border-top: 2px solid #888;
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading p {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.4rem;
+  font-style: italic;
+  color: #888;
+  letter-spacing: 0.5px;
+}
+
+/* Dark mode loading text */
+@media (prefers-color-scheme: dark) {
+  .loading p {
+    color: #999;
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .content {
+    padding: 32px 24px;
+  }
+  
+  .quote-text {
+    font-size: 2.8rem;
+    line-height: 1.3;
+    margin-bottom: 32px;
+  }
+  
+  .quote-text::before,
+  .quote-text::after {
+    font-size: 4rem;
+  }
+  
+  .quote-text::before {
+    top: -15px;
+    left: -30px;
+  }
+  
+  .quote-text::after {
+    bottom: -40px;
+    right: -30px;
+  }
+  
+  .quote-author {
+    font-size: 1.5rem;
+  }
+  
+  .quote-source {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .content {
+    padding: 24px 16px;
+  }
+  
+  .quote-text {
+    font-size: 2.2rem;
+    line-height: 1.3;
+    margin-bottom: 24px;
+  }
+  
+  .quote-text::before,
+  .quote-text::after {
+    font-size: 3rem;
+  }
+  
+  .quote-text::before {
+    top: -10px;
+    left: -20px;
+  }
+  
+  .quote-text::after {
+    bottom: -30px;
+    right: -20px;
+  }
+  
+  .quote-author {
+    font-size: 1.3rem;
+  }
+  
+  .quote-source {
+    font-size: 0.8rem;
+  }
+}
+
+/* Settings Button - Bottom Left Corner */
+.newtab-settings-btn {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  background: rgba(0, 0, 0, 0.06);
+  color: #4a4a4a;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 12px 16px;
+  border-radius: 24px;
+  font-size: 14px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Cormorant Garamond', serif;
+  letter-spacing: 1px;
+  backdrop-filter: blur(10px);
+  z-index: 100;
+}
+
+@media (prefers-color-scheme: dark) {
+  .newtab-settings-btn {
+    background: rgba(255, 255, 255, 0.08);
+    color: #b8b8b8;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+}
+
+.newtab-settings-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+@media (prefers-color-scheme: dark) {
+  .newtab-settings-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* Settings Overlay for New Tab */
+.newtab-settings-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+}
+
+.newtab-settings-panel {
+  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-secondary) 100%);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  width: 400px;
+  min-height: 400px;
+  max-height: 90vh;
+  overflow: auto;
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: default;
+}
+
+.newtab-settings-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 1px 1px, rgba(0,0,0,0.02) 1px, transparent 0);
+  background-size: 20px 20px;
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .newtab-settings-panel::before {
+    background: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.03) 1px, transparent 0);
+  }
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+@media (prefers-color-scheme: dark) {
+  .settings-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+  }
+}
+
+.settings-header h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0;
+  color: #2c2c2c;
+  letter-spacing: 0.5px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .settings-header h3 {
+    color: #e8e8e8;
+  }
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #333;
+}
+
+@media (prefers-color-scheme: dark) {
+  .close-btn {
+    color: #999;
+  }
+  
+  .close-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ccc;
+  }
+}
+
+.settings-content {
+  padding: 24px 24px 32px 24px;
+}
+
+.setting-group {
+  margin-bottom: 20px;
+}
+
+.setting-label {
+  display: block;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 15px;
+  font-weight: 500;
+  color: #4a4a4a;
+  margin-bottom: 16px;
+  letter-spacing: 0.3px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .setting-label {
+    color: #b8b8b8;
+  }
+}
+
+.theme-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.theme-option {
+  background: rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  padding: 20px 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 13px;
+  color: #4a4a4a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  min-height: 100px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .theme-option {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #b8b8b8;
+  }
+}
+
+.theme-option:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.theme-option.active {
+  border-color: rgba(100, 100, 100, 0.4);
+  background: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+@media (prefers-color-scheme: dark) {
+  .theme-option.active {
+    border-color: rgba(200, 200, 200, 0.4);
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.theme-preview {
+  width: 60px;
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  .theme-preview {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Daily Quote Generator",
+  "version": "1.0.0",
+  "description": "Get inspired with daily quotes from ZenQuotes and Quote Garden",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://zenquotes.io/*",
+    "https://quotegarden.io/*"
+  ],
+  "action": {
+    "default_popup": "index.html",
+    "default_title": "Daily Quote Generator"
+  },
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}

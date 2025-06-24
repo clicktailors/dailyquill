@@ -1,0 +1,1 @@
+chrome.runtime.onInstalled.addListener(()=>{console.log("Daily Quote Extension installed"),chrome.alarms.create("dailyQuote",{delayInMinutes:0,periodInMinutes:24*60})});chrome.alarms.onAlarm.addListener(e=>{e.name==="dailyQuote"&&console.log("Daily quote alarm triggered")});chrome.action.onClicked.addListener(e=>{console.log("Extension icon clicked")});
