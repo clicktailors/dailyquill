@@ -119,19 +119,17 @@ function App() {
         <button 
           className="settings-btn"
           onClick={() => {
-            console.log('Settings button clicked, current state:', showSettings);
             setShowSettings(!showSettings);
           }}
           title="Settings"
           aria-label="Open settings"
-          style={{ border: '2px solid red' }} // Temporary debug styling
         >
           ⚙️
         </button>
       </footer>
 
       {showSettings && (
-        <div className="settings-overlay" style={{ border: '3px solid blue' }}> {/* Debug styling */}
+        <div className="settings-overlay">
           <div className="settings-panel">
             <div className="settings-header">
               <h3>Settings</h3>
