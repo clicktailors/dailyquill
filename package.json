@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "build:extension": "vite build && npm run copy-manifest",
-    "copy-manifest": "cp manifest.json dist/"
+    "copy-manifest": "cp manifest.json dist/",
+    "resize-icons": "node resize-icons.js"
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -20,6 +21,7 @@
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@vitejs/plugin-react": "^4.2.1",
+    "sharp": "^0.34.2",
     "typescript": "^5.2.2",
     "vite": "^5.0.8"
   }

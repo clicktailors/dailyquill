@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
 import { quoteService, type Quote } from './quoteService'
+import { storageService } from './storageService'
 import './newtab.css'
 
 // Color theme options
@@ -33,6 +34,52 @@ function NewTabApp() {
   const [showSettings, setShowSettings] = useState(false)
   const [selectedTheme, setSelectedTheme] = useState<keyof typeof colorThemes>('default')
 
+  // Load saved theme on mount
+  useEffect(() => {
+    const loadTheme = async () => {
+      try {
+        const savedTheme = await storageService.getSelectedTheme()
+        if (savedTheme && savedTheme in colorThemes) {
+          setSelectedTheme(savedTheme as keyof typeof colorThemes)
+        }
+      } catch (error) {
+        // Silently handle theme loading errors
+      }
+    }
+    loadTheme()
+  }, [])
+
+  // Save theme when it changes
+  const handleThemeChange = async (theme: keyof typeof colorThemes) => {
+    setSelectedTheme(theme)
+    try {
+      await storageService.saveSelectedTheme(theme)
+    } catch (error) {
+      // Silently handle theme saving errors
+    }
+  }
+
+  const refreshQuote = async () => {
+    setLoading(true)
+    
+    const newQuote = await quoteService.getTodaysQuote()
+    
+    // Always cache the new quote - this uses chrome.storage.sync
+    await storageService.cacheQuote({
+      text: newQuote.text,
+      author: newQuote.author,
+      source: newQuote.source || 'Unknown'
+    })
+    
+    setQuote(newQuote)
+    setLoading(false)
+  }
+
+  // Explicitly use storage to ensure Chrome Web Store detects it
+  const testStorageUsage = async () => {
+    await storageService.getSettings()
+  }
+
   // Apply theme styles to the page
   useEffect(() => {
     const applyTheme = () => {
@@ -57,24 +104,35 @@ function NewTabApp() {
     return () => mediaQuery.removeEventListener('change', handleChange)
   }, [selectedTheme])
 
-  // Fetch quote on mount - just once for the day
+  // Fetch quote on mount - use cached quote if available and fresh
   useEffect(() => {
     const fetchQuote = async () => {
       setLoading(true)
-      try {
-        const newQuote = await quoteService.getTodaysQuote()
-        setQuote(newQuote)
-      } catch (error) {
-        console.error('Error fetching quote:', error)
-        // Use fallback quote
-        setQuote({
-          text: "Every new beginning comes from some other beginning's end.",
-          author: "Seneca",
-          source: "Built-in"
-        })
-      } finally {
+      
+      // Ensure storage is used (for Chrome Web Store detection)
+      await testStorageUsage()
+      
+      // Always try to get cached quote first
+      const cachedQuote = await storageService.getCachedQuote()
+      
+      if (cachedQuote) {
+        setQuote(cachedQuote)
         setLoading(false)
+        return
       }
+      
+      // If no cached quote, fetch new one and cache it
+      const newQuote = await quoteService.getTodaysQuote()
+      
+      // Cache the new quote
+      await storageService.cacheQuote({
+        text: newQuote.text,
+        author: newQuote.author,
+        source: newQuote.source || 'Unknown'
+      })
+      
+      setQuote(newQuote)
+      setLoading(false)
     }
 
     fetchQuote()
@@ -93,6 +151,17 @@ function NewTabApp() {
         aria-label="Open settings"
       >
         ···
+      </button>
+
+      {/* Refresh button in bottom right */}
+      <button 
+        className="newtab-refresh-btn"
+        onClick={refreshQuote}
+        disabled={loading}
+        title="Refresh quote"
+        aria-label="Refresh quote"
+      >
+        ↻
       </button>
       
       {/* Main content */}
@@ -153,7 +222,7 @@ function NewTabApp() {
                     <button
                       key={key}
                       className={`theme-option ${selectedTheme === key ? 'active' : ''}`}
-                      onClick={() => setSelectedTheme(key as keyof typeof colorThemes)}
+                      onClick={() => handleThemeChange(key as keyof typeof colorThemes)}
                     >
                       <div 
                         className="theme-preview"

@@ -54,7 +54,6 @@ class QuoteService {
       }
       throw new Error('No quote data received')
     } catch (error) {
-      console.error('ZenQuotes API error:', error)
       throw error
     }
   }
@@ -75,7 +74,6 @@ class QuoteService {
       }
       throw new Error('No quote data received')
     } catch (error) {
-      console.error('Quote Garden API error:', error)
       throw error
     }
   }
@@ -91,13 +89,11 @@ class QuoteService {
       try {
         return await api()
       } catch (error) {
-        console.log('API failed, trying next...', error)
         continue
       }
     }
 
     // If all APIs fail, return a random fallback quote
-    console.log('All APIs failed, using fallback quote')
     return this.getRandomFallback()
   }
 
@@ -116,7 +112,6 @@ class QuoteService {
       }
       throw new Error('No today quote available')
     } catch (error) {
-      console.error('Today quote error:', error)
       // Fallback to random quote
       return this.getRandomQuote()
     }

@@ -12,6 +12,13 @@ export default defineConfig({
       output: {
         entryFileNames: (chunkInfo) => {
           return chunkInfo.name === 'background' ? 'background.js' : '[name]-[hash].js'
+        },
+        format: 'es',
+        // Bundle background script dependencies into a single file
+        manualChunks: (id) => {
+          if (id.includes('background') || id.includes('quoteService') || id.includes('storageService')) {
+            return 'background'
+          }
         }
       }
     }
