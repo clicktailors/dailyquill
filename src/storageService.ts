@@ -8,6 +8,10 @@ export interface ExtensionSettings {
 	themeMode?: 'system' | 'light' | 'dark'
 	selectedQuoteFont?: string
 	selectedUIFont?: string
+	selectedDaisyTheme?: string
+	selectedLightTheme?: string
+	selectedDarkTheme?: string
+	selectedSemanticTheme?: string
 	cachedQuote?: {
 		text: string
 		author: string

@@ -52,6 +52,75 @@ export const baseHueMap: Record<string, number> = {
 	rose: 330,
 };
 
+// DaisyUI semantic color themes for different text emphasis
+export const semanticColorThemes = {
+	primary: {
+		name: 'Primary',
+		description: 'Main brand color emphasis',
+		className: 'text-primary'
+	},
+	secondary: {
+		name: 'Secondary',
+		description: 'Supporting color emphasis',
+		className: 'text-secondary'
+	},
+	accent: {
+		name: 'Accent',
+		description: 'Accent color emphasis',
+		className: 'text-accent'
+	},
+	neutral: {
+		name: 'Neutral',
+		description: 'Subtle text that matches main content',
+		className: 'text-base-content/50'
+	}
+};
+
+// DaisyUI themes organized by light/dark categories
+export const daisyThemeCategories = {
+	light: {
+		name: 'Light Themes',
+		themes: [
+			{ id: 'light', name: 'Light' },
+			{ id: 'cupcake', name: 'Cupcake' },
+			{ id: 'emerald', name: 'Emerald' },
+			{ id: 'corporate', name: 'Corporate' },
+			{ id: 'retro', name: 'Retro' },
+			{ id: 'valentine', name: 'Valentine' },
+			{ id: 'garden', name: 'Garden' },
+			{ id: 'lofi', name: 'Lo-Fi' },
+			{ id: 'pastel', name: 'Pastel' },
+			{ id: 'fantasy', name: 'Fantasy' },
+			{ id: 'wireframe', name: 'Wireframe' },
+			{ id: 'cmyk', name: 'CMYK' },
+			{ id: 'autumn', name: 'Autumn' },
+			{ id: 'nord', name: 'Nord' },
+			{ id: 'cyberpunk', name: 'Cyberpunk' },
+			{ id: 'acid', name: 'Acid' },
+			{ id: 'lemonade', name: 'Lemonade' },
+			{ id: 'winter', name: 'Winter' }
+		]
+	},
+	dark: {
+		name: 'Dark Themes',
+		themes: [
+			{ id: 'dark', name: 'Dark' },
+			{ id: 'synthwave', name: 'Synthwave' },
+			{ id: 'halloween', name: 'Halloween' },
+			{ id: 'forest', name: 'Forest' },
+			{ id: 'aqua', name: 'Aqua' },
+			{ id: 'black', name: 'Black' },
+			{ id: 'luxury', name: 'Luxury' },
+			{ id: 'dracula', name: 'Dracula' },
+			{ id: 'night', name: 'Night' },
+			{ id: 'coffee', name: 'Coffee' },
+			{ id: 'dim', name: 'Dim' },
+			{ id: 'sunset', name: 'Sunset' },
+			{ id: 'business', name: 'Business' }
+		]
+	}
+};
+
 // Font system for quotes and UI
 export const quoteFonts = {
 	classic: {

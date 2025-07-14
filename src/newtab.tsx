@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import ReactDOM from 'react-dom/client'
 import { quoteService, type Quote } from './quoteService'
 import { storageService } from './storageService'
-import { colorThemes, baseHueMap, quoteFonts, uiFonts, defaultFonts } from './colors'
+import { colorThemes, baseHueMap, quoteFonts, uiFonts, defaultFonts, semanticColorThemes, daisyThemeCategories } from './colors'
 import { SettingsPanel } from './SettingsPanel'
 import './newtab.css'
 
@@ -27,6 +27,9 @@ function NewTabApp() {
   const [selectedThemeMode, setSelectedThemeMode] = useState<ThemeMode>('system');
   const [selectedQuoteFont, setSelectedQuoteFont] = useState(defaultFonts.quote)
   const [selectedUIFont, setSelectedUIFont] = useState(defaultFonts.ui)
+  const [selectedLightTheme, setSelectedLightTheme] = useState('light')
+  const [selectedDarkTheme, setSelectedDarkTheme] = useState('dark')
+  const [selectedSemanticTheme, setSelectedSemanticTheme] = useState('primary')
 
   // Compute the base hue for the selected theme
   const baseHue = baseHueMap[selectedTheme];
@@ -197,6 +200,83 @@ function NewTabApp() {
     setSelectedUIFont(font);
   };
 
+  // Handle light theme change
+  const handleLightThemeChange = (theme: string) => {
+    setSelectedLightTheme(theme);
+    // Apply immediately if currently in light mode
+    if (selectedThemeMode === 'light' || 
+        (selectedThemeMode === 'system' && !window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.setAttribute('data-theme', theme);
+    }
+    // Save to storage
+    storageService.saveSettings({ selectedLightTheme: theme });
+  };
+
+  // Handle dark theme change
+  const handleDarkThemeChange = (theme: string) => {
+    setSelectedDarkTheme(theme);
+    // Apply immediately if currently in dark mode
+    if (selectedThemeMode === 'dark' || 
+        (selectedThemeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.setAttribute('data-theme', theme);
+    }
+    // Save to storage
+    storageService.saveSettings({ selectedDarkTheme: theme });
+  };
+
+  // Handle semantic color theme change
+  const handleSemanticThemeChange = (theme: string) => {
+    setSelectedSemanticTheme(theme);
+    // Save to storage
+    storageService.saveSettings({ selectedSemanticTheme: theme });
+  };
+
+  // Apply appropriate DaisyUI theme based on mode
+  useEffect(() => {
+    const applyTheme = () => {
+      const isDarkMode = selectedThemeMode === 'dark' || 
+        (selectedThemeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      const themeToApply = isDarkMode ? selectedDarkTheme : selectedLightTheme;
+      document.documentElement.setAttribute('data-theme', themeToApply);
+    };
+
+    applyTheme();
+
+    // Listen for system preference changes when in system mode
+    if (selectedThemeMode === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      mediaQuery.addEventListener('change', applyTheme);
+      return () => mediaQuery.removeEventListener('change', applyTheme);
+    }
+  }, [selectedThemeMode, selectedLightTheme, selectedDarkTheme]);
+
+  // Load saved themes
+  useEffect(() => {
+    const loadThemes = async () => {
+      const saved = await storageService.getSettings();
+      if (saved) {
+        if (saved.selectedLightTheme) {
+          setSelectedLightTheme(saved.selectedLightTheme);
+        }
+        if (saved.selectedDarkTheme) {
+          setSelectedDarkTheme(saved.selectedDarkTheme);
+        }
+      }
+    };
+    loadThemes();
+  }, []);
+
+  // Load saved semantic theme
+  useEffect(() => {
+    const loadSemanticTheme = async () => {
+      const saved = await storageService.getSettings();
+      if (saved && saved.selectedSemanticTheme) {
+        setSelectedSemanticTheme(saved.selectedSemanticTheme);
+      }
+    };
+    loadSemanticTheme();
+  }, []);
+
   const refreshQuote = async () => {
     setLoading(true)
     
@@ -350,7 +430,7 @@ function NewTabApp() {
     <div className={
       `min-h-screen w-full flex flex-col items-center justify-center bg-base-200 transition-colors duration-300` +
       (isDark ? ' text-base-content' : '')
-    } data-theme={selectedTheme}>
+    }>
       {/* Settings button in bottom left */}
       <button 
         className="btn btn-circle btn-ghost fixed bottom-6 left-6 z-50"
@@ -395,13 +475,13 @@ function NewTabApp() {
                   <span className="opacity-30 text-5xl align-bottom select-none">”</span>
                 </blockquote>
                 <cite
-                  className="block text-lg md:text-xl font-semibold mt-2 mb-1 text-primary"
+                  className={`block text-lg md:text-xl font-semibold mt-2 mb-1 ${semanticColorThemes[selectedSemanticTheme as keyof typeof semanticColorThemes]?.className || 'text-primary'}`}
                   style={{ fontFamily: `var(--quote-font)` }}
                 >
                   {quote.author}
                 </cite>
                 {quote.source && (
-                  <div className="text-sm opacity-70 mb-2" style={{ fontFamily: `var(--quote-font)` }}>
+                  <div className="text-sm opacity-30 mb-2" style={{ fontFamily: `var(--quote-font)` }}>
                     {quote.source}
                   </div>
                 )}
@@ -414,7 +494,7 @@ function NewTabApp() {
       {/* Settings panel with overlay */}
       {settingsPanelVisible && (
         <div
-          className="fixed inset-0 z-[999] bg-transparent flex"
+          className="fixed inset-0 z-[1001] bg-transparent flex"
           onClick={e => {
             if (e.target === e.currentTarget) setShowSettings(false);
           }}
@@ -441,6 +521,12 @@ function NewTabApp() {
             onQuoteFontChange={handleQuoteFontChange}
             selectedUIFont={selectedUIFont}
             onUIFontChange={handleUIFontChange}
+            selectedLightTheme={selectedLightTheme}
+            selectedDarkTheme={selectedDarkTheme}
+            onLightThemeChange={handleLightThemeChange}
+            onDarkThemeChange={handleDarkThemeChange}
+            selectedSemanticTheme={selectedSemanticTheme}
+            onSemanticThemeChange={handleSemanticThemeChange}
           />
         </div>
       )}
