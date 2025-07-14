@@ -1,38 +1,105 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import ReactDOM from 'react-dom/client'
 import { quoteService, type Quote } from './quoteService'
 import { storageService } from './storageService'
+import { colorThemes, baseHueMap, quoteFonts, uiFonts, defaultFonts } from './colors'
+import { SettingsPanel } from './SettingsPanel'
 import './newtab.css'
 
 // Color theme options
-const colorThemes = {
-  default: {
-    name: 'Classic',
-    light: { primary: '#fdfdf8', secondary: '#f5f5f0' },
-    dark: { primary: '#0f0f0f', secondary: '#1a1a1a' }
-  },
-  sepia: {
-    name: 'Sepia',
-    light: { primary: '#f5f1e8', secondary: '#ede4d3' },
-    dark: { primary: '#2a2218', secondary: '#342b1f' }
-  },
-  sage: {
-    name: 'Sage',
-    light: { primary: '#f2f5f1', secondary: '#e6ebe4' },
-    dark: { primary: '#1a2118', secondary: '#242d21' }
-  },
-  rose: {
-    name: 'Rose',
-    light: { primary: '#f5f1f2', secondary: '#ebe4e6' },
-    dark: { primary: '#2a1a1c', secondary: '#342024' }
-  }
-}
+const initialSaturation = 30;
+const initialLightness = 95;
+
+type ThemeMode = 'system' | 'light' | 'dark';
+
+// Development mode detection
+const isDev = import.meta.env.DEV || window.location.hostname === 'localhost';
 
 function NewTabApp() {
   const [quote, setQuote] = useState<Quote | null>(null)
   const [loading, setLoading] = useState(true)
   const [showSettings, setShowSettings] = useState(false)
+  const [settingsPanelVisible, setSettingsPanelVisible] = useState(false)
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [selectedTheme, setSelectedTheme] = useState<keyof typeof colorThemes>('default')
+  const [selectedSaturation, setSelectedSaturation] = useState(initialSaturation)
+  const [selectedLightness, setSelectedLightness] = useState(initialLightness)
+  const [selectedThemeMode, setSelectedThemeMode] = useState<ThemeMode>('system');
+  const [selectedQuoteFont, setSelectedQuoteFont] = useState(defaultFonts.quote)
+  const [selectedUIFont, setSelectedUIFont] = useState(defaultFonts.ui)
+
+  // Compute the base hue for the selected theme
+  const baseHue = baseHueMap[selectedTheme];
+  const dynamicPrimary = `hsl(${baseHue}, ${selectedSaturation}%, ${selectedLightness}%)`;
+
+  // Load saved settings on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const savedTheme = await storageService.getSelectedTheme()
+        if (savedTheme && savedTheme in colorThemes) {
+          setSelectedTheme(savedTheme as keyof typeof colorThemes)
+        }
+        
+        const saved = await storageService.getSettings();
+        if (saved) {
+          if (saved.themeMode) {
+            setSelectedThemeMode(saved.themeMode);
+          }
+          if (saved.selectedQuoteFont) {
+            setSelectedQuoteFont(saved.selectedQuoteFont);
+          }
+          if (saved.selectedUIFont) {
+            setSelectedUIFont(saved.selectedUIFont);
+          }
+        }
+      } catch (error) {
+        // Silently handle loading errors
+      }
+    }
+    loadSettings()
+  }, [])
+
+  // Load Google Fonts
+  useEffect(() => {
+    const loadFonts = () => {
+      const fontsToLoad = [
+        quoteFonts[selectedQuoteFont as keyof typeof quoteFonts]?.googleFont,
+        uiFonts[selectedUIFont as keyof typeof uiFonts]?.googleFont
+      ].filter(Boolean);
+
+      if (fontsToLoad.length > 0) {
+        const link = document.createElement('link');
+        link.href = `https://fonts.googleapis.com/css2?${fontsToLoad.join('&')}&display=swap`;
+        link.rel = 'stylesheet';
+        document.head.appendChild(link);
+      }
+    };
+
+    loadFonts();
+  }, [selectedQuoteFont, selectedUIFont]);
+
+  // Save font preferences when they change
+  useEffect(() => {
+    storageService.saveSelectedQuoteFont(selectedQuoteFont);
+  }, [selectedQuoteFont]);
+
+  useEffect(() => {
+    storageService.saveSelectedUIFont(selectedUIFont);
+  }, [selectedUIFont]);
+
+  // Apply fonts to CSS variables
+  useEffect(() => {
+    const quoteFont = quoteFonts[selectedQuoteFont as keyof typeof quoteFonts];
+    const uiFont = uiFonts[selectedUIFont as keyof typeof uiFonts];
+    
+    if (quoteFont) {
+      document.documentElement.style.setProperty('--quote-font', quoteFont.family);
+    }
+    if (uiFont) {
+      document.documentElement.style.setProperty('--ui-font', uiFont.family);
+    }
+  }, [selectedQuoteFont, selectedUIFont]);
 
   // Load saved theme on mount
   useEffect(() => {
@@ -49,15 +116,86 @@ function NewTabApp() {
     loadTheme()
   }, [])
 
+  // Load saved theme mode on mount
+  useEffect(() => {
+    const loadThemeMode = async () => {
+      const saved = await storageService.getSettings();
+      if (saved && saved.themeMode) {
+        setSelectedThemeMode(saved.themeMode);
+      }
+    };
+    loadThemeMode();
+  }, []);
+
   // Save theme when it changes
   const handleThemeChange = async (theme: keyof typeof colorThemes) => {
     setSelectedTheme(theme)
+    const newLightness = getDefaultLightness(theme, isDark);
+    const newSaturation = getDefaultSaturation(theme, isDark);
+    if (selectedLightness < lightnessRange.min || selectedLightness > lightnessRange.max) {
+      setSelectedLightness(newLightness);
+    }
+    if (selectedSaturation < saturationRange.min || selectedSaturation > saturationRange.max) {
+      setSelectedSaturation(newSaturation);
+    }
     try {
       await storageService.saveSelectedTheme(theme)
+      // Announce theme change to screen readers
+      const announcement = document.createElement('div')
+      announcement.setAttribute('aria-live', 'polite')
+      announcement.setAttribute('aria-atomic', 'true')
+      announcement.style.position = 'absolute'
+      announcement.style.left = '-10000px'
+      announcement.style.width = '1px'
+      announcement.style.height = '1px'
+      announcement.style.overflow = 'hidden'
+      announcement.textContent = `Theme changed to ${colorThemes[theme].name}`
+      document.body.appendChild(announcement)
+      setTimeout(() => document.body.removeChild(announcement), 1000)
     } catch (error) {
       // Silently handle theme saving errors
     }
   }
+
+  // Save theme mode when it changes
+  useEffect(() => {
+    storageService.saveSettings({ themeMode: selectedThemeMode });
+  }, [selectedThemeMode]);
+
+  // Cycle theme mode
+  const handleThemeModeChange = () => {
+    setSelectedThemeMode((prev) =>
+      prev === 'system' ? 'light' : prev === 'light' ? 'dark' : 'system'
+    );
+  };
+
+  // Apply theme mode override
+  useEffect(() => {
+    if (selectedThemeMode === 'system') {
+      document.documentElement.removeAttribute('data-color-scheme');
+    } else {
+      document.documentElement.setAttribute('data-color-scheme', selectedThemeMode);
+    }
+  }, [selectedThemeMode]);
+
+  // Handle saturation change
+  const handleSaturationChange = (saturation: number) => {
+    setSelectedSaturation(saturation)
+  }
+
+  // Handle lightness change
+  const handleLightnessChange = (lightness: number) => {
+    setSelectedLightness(lightness)
+  }
+
+  // Handle font changes
+  const handleQuoteFontChange = (font: string) => {
+    setSelectedQuoteFont(font);
+  };
+
+  const handleUIFontChange = (font: string) => {
+    setSelectedUIFont(font);
+  };
 
   const refreshQuote = async () => {
     setLoading(true)
@@ -80,29 +218,99 @@ function NewTabApp() {
     await storageService.getSettings()
   }
 
+  // Helper to determine if dark mode is active
+  const isDark = (selectedThemeMode === 'dark') ||
+    (selectedThemeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+  const lightModeLightness = { min: 70, max: 100, default: 95 };
+  const darkModeLightness = { min: 10, max: 40, default: 20 };
+  const lightModeSaturation = { min: 10, max: 60, default: 30 };
+  const darkModeSaturation = { min: 10, max: 60, default: 30 };
+
+  const lightnessRange = isDark ? darkModeLightness : lightModeLightness;
+  const saturationRange = isDark ? darkModeSaturation : lightModeSaturation;
+
+  const getDefaultLightness = (theme: keyof typeof colorThemes, isDark: boolean) => {
+    if (theme === 'sepia') return isDark ? 20 : 80;
+    return isDark ? 20 : 95;
+  };
+  const getDefaultSaturation = (theme: keyof typeof colorThemes, isDark: boolean) => {
+    // You can customize per-theme if desired
+    return 30;
+  };
+
+  // When theme mode or theme changes, reset sliders if out of range
+  useEffect(() => {
+    const newLightness = getDefaultLightness(selectedTheme, isDark);
+    const newSaturation = getDefaultSaturation(selectedTheme, isDark);
+    if (selectedLightness < lightnessRange.min || selectedLightness > lightnessRange.max) {
+      setSelectedLightness(newLightness);
+    }
+    if (selectedSaturation < saturationRange.min || selectedSaturation > saturationRange.max) {
+      setSelectedSaturation(newSaturation);
+    }
+    // eslint-disable-next-line
+  }, [isDark, selectedTheme]);
+
   // Apply theme styles to the page
   useEffect(() => {
     const applyTheme = () => {
-      const theme = colorThemes[selectedTheme]
-      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      const colors = isDark ? theme.dark : theme.light
-      
-      document.documentElement.style.setProperty('--theme-primary', colors.primary)
-      document.documentElement.style.setProperty('--theme-secondary', colors.secondary)
+      // Always use dynamicPrimary for both modes
+      document.documentElement.style.setProperty('--theme-primary', dynamicPrimary);
+      let mode: 'light' | 'dark';
+      if (selectedThemeMode === 'system') {
+        mode = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      } else {
+        mode = selectedThemeMode;
+      }
+      const theme = colorThemes[selectedTheme];
+      document.documentElement.style.setProperty('--theme-secondary', theme[mode].secondary);
+      document.documentElement.style.setProperty('--theme-mode', mode);
+      document.documentElement.style.setProperty('--theme-text', mode === 'dark' ? '#e8e8e8' : '#2c2c2c');
+    };
+    applyTheme();
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => applyTheme();
+    if (selectedThemeMode === 'system') {
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
+    return;
+  }, [selectedTheme, selectedSaturation, selectedLightness, selectedThemeMode, dynamicPrimary]);
+
+  // Handle escape key to close settings panel
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && showSettings) {
+        setShowSettings(false)
+      }
     }
 
-    // Apply theme immediately
-    applyTheme()
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [showSettings])
 
-    // Listen for system color scheme changes
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-    const handleChange = () => applyTheme()
-    
-    mediaQuery.addEventListener('change', handleChange)
-    
-    // Cleanup listener on unmount
-    return () => mediaQuery.removeEventListener('change', handleChange)
-  }, [selectedTheme])
+  // Open panel: show overlay and panel immediately
+  useEffect(() => {
+    if (showSettings) {
+      setSettingsPanelVisible(true)
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current)
+        closeTimeoutRef.current = null
+      }
+    } else if (settingsPanelVisible) {
+      // Wait for slide-out animation before unmounting
+      closeTimeoutRef.current = setTimeout(() => {
+        setSettingsPanelVisible(false)
+      }, 300)
+    }
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current)
+        closeTimeoutRef.current = null
+      }
+    }
+  }, [showSettings])
 
   // Fetch quote on mount - use cached quote if available and fresh
   useEffect(() => {
@@ -139,108 +347,151 @@ function NewTabApp() {
   }, [])
 
   return (
-    <div className="newtab-container" data-theme={selectedTheme}>
-      {/* Background gradient */}
-      <div className="background-gradient"></div>
-      
+    <div className={
+      `min-h-screen w-full flex flex-col items-center justify-center bg-base-200 transition-colors duration-300` +
+      (isDark ? ' text-base-content' : '')
+    } data-theme={selectedTheme}>
       {/* Settings button in bottom left */}
       <button 
-        className="newtab-settings-btn"
+        className="btn btn-circle btn-ghost fixed bottom-6 left-6 z-50"
         onClick={() => setShowSettings(!showSettings)}
         title="Settings"
         aria-label="Open settings"
+        aria-expanded={showSettings}
+        aria-controls="settings-panel"
       >
-        ···
+        <span className="text-2xl">···</span>
       </button>
 
       {/* Refresh button in bottom right */}
       <button 
-        className="newtab-refresh-btn"
+        className="btn btn-circle btn-ghost fixed bottom-6 right-6 z-50"
         onClick={refreshQuote}
         disabled={loading}
         title="Refresh quote"
-        aria-label="Refresh quote"
+        aria-label={loading ? "Loading new quote..." : "Refresh quote"}
+        aria-live="polite"
       >
-        ↻
+        <span className="text-xl">↻</span>
       </button>
-      
-      {/* Main content */}
-      <div className="content">
-        {/* Quote section - main focus */}
-        <div className="quote-section">
-          {loading ? (
-            <div className="loading">
-              <div className="spinner"></div>
-              <p>Loading today's inspiration...</p>
-            </div>
-          ) : quote ? (
-            <div className="quote-display">
-              <blockquote className="quote-text">
-                {quote.text}
-              </blockquote>
-              <cite className="quote-author">
-                {quote.author}
-              </cite>
-              {quote.source && (
-                <small className="quote-source">
-                  {quote.source}
-                </small>
-              )}
-            </div>
-          ) : null}
-        </div>
-      </div>
 
-      {/* Settings panel */}
-      {showSettings && (
-        <div 
-          className="newtab-settings-overlay"
-          onClick={(e) => {
-            // Close modal if clicking on the overlay (not the panel itself)
-            if (e.target === e.currentTarget) {
-              setShowSettings(false);
-            }
-          }}
-        >
-          <div className="newtab-settings-panel">
-            <div className="settings-header">
-              <h3>Settings</h3>
-              <button 
-                className="close-btn"
-                onClick={() => setShowSettings(false)}
-                aria-label="Close settings"
-              >
-                ✕
-              </button>
-            </div>
-            
-            <div className="settings-content">
-              <div className="setting-group">
-                <label className="setting-label">Color Theme</label>
-                <div className="theme-options">
-                  {Object.entries(colorThemes).map(([key, theme]) => (
-                    <button
-                      key={key}
-                      className={`theme-option ${selectedTheme === key ? 'active' : ''}`}
-                      onClick={() => handleThemeChange(key as keyof typeof colorThemes)}
-                    >
-                      <div 
-                        className="theme-preview"
-                        style={{
-                          background: `linear-gradient(135deg, ${theme.light.primary} 50%, ${theme.dark.primary} 50%)`
-                        }}
-                      ></div>
-                      <span>{theme.name}</span>
-                    </button>
-                  ))}
-                </div>
+      {/* Main content */}
+      <main className="flex flex-1 flex-col items-center justify-center w-full px-4">
+        <div className="w-full max-w-2xl mx-auto">
+          <div className="flex flex-col items-center">
+            {loading ? (
+              <div className="flex flex-col items-center gap-4 py-16">
+                <span className="loading loading-spinner loading-lg text-primary"></span>
+                <span className="text-base opacity-70">Loading today's inspiration...</span>
               </div>
-            </div>
+            ) : quote ? (
+              <>
+                <blockquote
+                  className="text-center font-serif italic text-3xl md:text-4xl lg:text-5xl leading-tight mb-8 relative"
+                  style={{ fontFamily: `var(--quote-font)` }}
+                >
+                  <span className="opacity-30 text-5xl align-top select-none">“</span>
+                  {quote.text}
+                  <span className="opacity-30 text-5xl align-bottom select-none">”</span>
+                </blockquote>
+                <cite
+                  className="block text-lg md:text-xl font-semibold mt-2 mb-1 text-primary"
+                  style={{ fontFamily: `var(--quote-font)` }}
+                >
+                  {quote.author}
+                </cite>
+                {quote.source && (
+                  <div className="text-sm opacity-70 mb-2" style={{ fontFamily: `var(--quote-font)` }}>
+                    {quote.source}
+                  </div>
+                )}
+              </>
+            ) : null}
           </div>
+        </div>
+      </main>
+
+      {/* Settings panel with overlay */}
+      {settingsPanelVisible && (
+        <div
+          className="fixed inset-0 z-[999] bg-transparent flex"
+          onClick={e => {
+            if (e.target === e.currentTarget) setShowSettings(false);
+          }}
+          aria-label="Settings overlay"
+        >
+          <SettingsPanel
+            isOpen={showSettings}
+            onClose={() => setShowSettings(false)}
+            selectedTheme={selectedTheme}
+            onThemeChange={(theme) => handleThemeChange(theme as keyof typeof colorThemes)}
+            selectedSaturation={selectedSaturation}
+            onSaturationChange={handleSaturationChange}
+            selectedLightness={selectedLightness}
+            onLightnessChange={handleLightnessChange}
+            dynamicPrimary={dynamicPrimary}
+            id="settings-panel"
+            selectedThemeMode={selectedThemeMode}
+            onThemeModeChange={handleThemeModeChange}
+            lightnessMin={lightnessRange.min}
+            lightnessMax={lightnessRange.max}
+            saturationMin={saturationRange.min}
+            saturationMax={saturationRange.max}
+            selectedQuoteFont={selectedQuoteFont}
+            onQuoteFontChange={handleQuoteFontChange}
+            selectedUIFont={selectedUIFont}
+            onUIFontChange={handleUIFontChange}
+          />
         </div>
       )}
     </div>
   )
 }
 
-ReactDOM.createRoot(document.getElementById('newtab-root')!).render(<NewTabApp />)
+// Development wrapper component
+const DevWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+	return (
+		<div style={{
+			width: '100vw',
+			height: '100vh',
+			background: 'linear-gradient(135deg, #fdfdf8 0%, #f5f5f0 100%)',
+			position: 'relative',
+			overflow: 'hidden'
+		}}>
+			{/* Development indicator */}
+			<div style={{
+				position: 'fixed',
+				top: '10px',
+				right: '10px',
+				background: 'rgba(255, 0, 0, 0.8)',
+				color: 'white',
+				padding: '4px 8px',
+				borderRadius: '4px',
+				fontSize: '12px',
+				fontFamily: 'monospace',
+				zIndex: 9999
+			}}>
+				DEV MODE
+			</div>
+			{children}
+		</div>
+	)
+}
+
+// Main render logic
+const rootElement = document.getElementById('newtab-root')
+if (rootElement) {
+	const root = ReactDOM.createRoot(rootElement)
+	
+	if (isDev) {
+		// Development mode - wrap in dev container
+		root.render(
+			<DevWrapper>
+				<NewTabApp />
+			</DevWrapper>
+		)
+	} else {
+		// Extension mode - render directly
+		root.render(<NewTabApp />)
+	}
+}

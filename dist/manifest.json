@@ -5,7 +5,6 @@
 	"description": "Get inspired with daily quotes from ZenQuotes and Quote Garden",
 	"permissions": [
 		"storage",
-		"activeTab",
 		"alarms"
 	],
 	"host_permissions": [
