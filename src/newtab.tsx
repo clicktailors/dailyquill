@@ -456,7 +456,7 @@ function NewTabApp() {
 
   return (
     <div className={
-      `min-h-screen w-full flex flex-col items-center justify-center bg-base-200 nois transition-colors duration-300` +
+      `min-h-screen w-full flex flex-col items-center justify-center bg-base-200 noise transition-colors duration-300` +
       (isDark ? ' text-base-content' : '')
     }>
       {/* Settings button in bottom left */}

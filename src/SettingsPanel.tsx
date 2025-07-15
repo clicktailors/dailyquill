@@ -135,54 +135,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 			? "Dark"
 				: "System";
 
-	const Sliders = () => { 
-		return (
-			<div className="flex flex-col gap-2">
-								<div className="form-control gap-2">
-					<label
-						htmlFor="saturation-slider"
-						className="label text-lg font-semibold"
-					>
-						Saturation:{" "}
-						<span className="font-mono">{selectedSaturation}%</span>
-					</label>
-					<input
-						type="range"
-						id="saturation-slider"
-						min={saturationMin}
-						max={saturationMax}
-						value={selectedSaturation}
-						onChange={(e) =>
-							onSaturationChange(Number(e.target.value))
-						}
-						className="range range-primary"
-						aria-label="Saturation"
-					/>
-				</div>
-				<div className="form-control gap-2">
-					<label
-						htmlFor="lightness-slider"
-						className="label text-lg font-semibold"
-					>
-						Lightness:{" "}
-						<span className="font-mono">{selectedLightness}%</span>
-					</label>
-					<input
-						type="range"
-						id="lightness-slider"
-						min={lightnessMin}
-						max={lightnessMax}
-						value={selectedLightness}
-						onChange={(e) =>
-							onLightnessChange(Number(e.target.value))
-						}
-						className="range range-primary"
-						aria-label="Lightness"
-					/>
-				</div>
-			</div>
-		)
-	}
+
 	
 
 	return (
@@ -291,7 +244,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 					</label>
 					<div className={styles.radioContainer}>
 						{Object.entries(semanticColorThemes).map(
-							([key, theme]) => {
+							([key]) => {
 								const isActive = selectedSemanticTheme === key;
 								let radioClass = "radio";
 								
@@ -325,15 +278,13 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 											checked={isActive}
 											onChange={() => onSemanticThemeChange(key)}
 										/>
-
 									</label>
 								);
 							}
 						)}
 					</div>
 				</div>
-				{/* <div className="divider my-0" /> */}
-				{/* <Sliders /> */}
+
 			</div>
 				</motion.div>
 			)}
