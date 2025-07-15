@@ -267,11 +267,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 								)}
 							</div>
 							<div className="mt-4">
-								<label className="sr-only">
-									Font Size
-								</label>
+								<label className="sr-only">Font Size</label>
 								<div className="flex items-center gap-4">
-									<span className="text-sm opacity-70 font-bold" title="Small">
+									<span
+										className="text-sm opacity-70 font-bold"
+										title="Small"
+									>
 										Aa
 									</span>
 									<input
@@ -281,12 +282,17 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 										step={1}
 										value={fontSize}
 										onChange={(e) =>
-											onFontSizeChange(Number(e.target.value))
+											onFontSizeChange(
+												Number(e.target.value)
+											)
 										}
 										className="range range-primary flex-1"
 										aria-label="Font size"
 									/>
-									<span className="text-xl opacity-70 font-bold" title="Large">
+									<span
+										className="text-xl opacity-70 font-bold"
+										title="Large"
+									>
 										Aa
 									</span>
 								</div>
@@ -345,6 +351,34 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 									}
 								)}
 							</div>
+						</div>
+					</div>
+
+					{/* Footer Credits */}
+					<div className="px-6 py-4 border-t border-base-300 flex-shrink-0">
+						<div className="flex justify-center items-center gap-3">
+							<div className="text-sm opacity-70">
+								Built with ❤️ by{" "}
+								<a
+									href="https://clicktailors.com"
+									target="_blank"
+									rel="noopener noreferrer"
+									className="link link-accent link-hover font-medium"
+								>
+									ClickTailors
+								</a>
+							</div>
+							{/* <div className="text-sm opacity-70">
+								<a
+									href="https://buymeacoffee.com/clicktailors"
+									target="_blank"
+									rel="noopener noreferrer"
+									className="btn btn-xs btn-outline btn-accent gap-2"
+								>
+									<span>☕</span>
+									Buy me a coffee
+								</a>
+							</div> */}
 						</div>
 					</div>
 				</motion.div>
