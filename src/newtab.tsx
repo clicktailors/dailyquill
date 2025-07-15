@@ -4,6 +4,8 @@ import { quoteService, type Quote } from './quoteService'
 import { storageService } from './storageService'
 import { colorThemes, baseHueMap, quoteFonts, uiFonts, defaultFonts, semanticColorThemes, daisyThemeCategories } from './colors'
 import { SettingsPanel } from './SettingsPanel'
+import SwipeQuote from './components/SwipeQuote'
+import PlainQuote from './components/PlainQuote'
 import './newtab.css'
 
 // Color theme options
@@ -14,6 +16,8 @@ type ThemeMode = 'system' | 'light' | 'dark';
 
 // Development mode detection
 const isDev = import.meta.env.DEV || window.location.hostname === 'localhost';
+
+const isPlainQuote = true;
 
 function NewTabApp() {
   const [quote, setQuote] = useState<Quote | null>(null)
@@ -278,19 +282,33 @@ function NewTabApp() {
   }, []);
 
   const refreshQuote = async () => {
-    setLoading(true)
+    // Try to use prefetched quote first for instant refresh
+    const prefetchedQuote = await storageService.consumePrefetchedQuote()
     
-    const newQuote = await quoteService.getTodaysQuote()
-    
-    // Always cache the new quote - this uses chrome.storage.sync
-    await storageService.cacheQuote({
-      text: newQuote.text,
-      author: newQuote.author,
-      source: newQuote.source || 'Unknown'
-    })
-    
-    setQuote(newQuote)
-    setLoading(false)
+    if (prefetchedQuote) {
+      // Use prefetched quote immediately - no loading state needed
+      setQuote(prefetchedQuote)
+      // Prefetch the next quote in the background
+      quoteService.prefetchNextQuote()
+    } else {
+      // Fallback to fetching new quote with loading state
+      setLoading(true)
+      
+      const newQuote = await quoteService.getRandomQuote()
+      
+      // Cache the new quote
+      await storageService.cacheQuote({
+        text: newQuote.text,
+        author: newQuote.author,
+        source: newQuote.source || 'Unknown'
+      })
+      
+      setQuote(newQuote)
+      setLoading(false)
+      
+      // Prefetch the next quote in the background
+      quoteService.prefetchNextQuote()
+    }
   }
 
   // Explicitly use storage to ensure Chrome Web Store detects it
@@ -406,6 +424,13 @@ function NewTabApp() {
       if (cachedQuote) {
         setQuote(cachedQuote)
         setLoading(false)
+        
+        // Check if we need to prefetch the next quote
+        const prefetchedQuote = await storageService.getPrefetchedQuote()
+        if (!prefetchedQuote) {
+          // Prefetch in background if none exists
+          quoteService.prefetchNextQuote()
+        }
         return
       }
       
@@ -421,6 +446,9 @@ function NewTabApp() {
       
       setQuote(newQuote)
       setLoading(false)
+      
+      // Prefetch the next quote in the background
+      quoteService.prefetchNextQuote()
     }
 
     fetchQuote()
@@ -428,7 +456,7 @@ function NewTabApp() {
 
   return (
     <div className={
-      `min-h-screen w-full flex flex-col items-center justify-center bg-base-200 transition-colors duration-300` +
+      `min-h-screen w-full flex flex-col items-center justify-center bg-base-200 nois transition-colors duration-300` +
       (isDark ? ' text-base-content' : '')
     }>
       {/* Settings button in bottom left */}
@@ -457,38 +485,22 @@ function NewTabApp() {
 
       {/* Main content */}
       <main className="flex flex-1 flex-col items-center justify-center w-full px-4">
-        <div className="w-full max-w-2xl mx-auto">
-          <div className="flex flex-col items-center">
-            {loading ? (
-              <div className="flex flex-col items-center gap-4 py-16">
-                <span className="loading loading-spinner loading-lg text-primary"></span>
-                <span className="text-base opacity-70">Loading today's inspiration...</span>
-              </div>
-            ) : quote ? (
-              <>
-                <blockquote
-                  className="text-center font-serif italic text-3xl md:text-4xl lg:text-5xl leading-tight mb-8 relative"
-                  style={{ fontFamily: `var(--quote-font)` }}
-                >
-                  <span className="opacity-30 text-5xl align-top select-none">“</span>
-                  {quote.text}
-                  <span className="opacity-30 text-5xl align-bottom select-none">”</span>
-                </blockquote>
-                <cite
-                  className={`block text-lg md:text-xl font-semibold mt-2 mb-1 ${semanticColorThemes[selectedSemanticTheme as keyof typeof semanticColorThemes]?.className || 'text-primary'}`}
-                  style={{ fontFamily: `var(--quote-font)` }}
-                >
-                  {quote.author}
-                </cite>
-                {quote.source && (
-                  <div className="text-sm opacity-30 mb-2" style={{ fontFamily: `var(--quote-font)` }}>
-                    {quote.source}
-                  </div>
-                )}
-              </>
-            ) : null}
-          </div>
-        </div>
+        {isPlainQuote ? (
+          <PlainQuote 
+            quote={quote}
+            loading={loading}
+            selectedSemanticTheme={selectedSemanticTheme}
+            selectedQuoteFont={selectedQuoteFont}
+          />
+        ) : (
+          <SwipeQuote 
+            quote={quote}
+            loading={loading}
+            onRefresh={refreshQuote}
+            selectedSemanticTheme={selectedSemanticTheme}
+            selectedQuoteFont={selectedQuoteFont}
+          />
+        )}
       </main>
 
       {/* Settings panel with overlay */}

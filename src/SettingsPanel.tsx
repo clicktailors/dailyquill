@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
 	colorThemes,
 	baseHueMap,
@@ -66,6 +67,17 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 	onLightThemeChange,
 	onDarkThemeChange,
 }) => {
+	// Shared style constants
+	const styles = {
+		sectionTitle: "label text-md font-semibold mb-2",
+		sectionContainer: "form-control gap-4",
+		buttonContainer: "grid grid-cols-3 gap-0 rounded-lg overflow-hidden border border-base-300",
+		selectedButton: "btn btn-sm btn-primary rounded-none border-0",
+		unselectedButton: "btn btn-sm btn-soft rounded-none border-0",
+		divider: "divider my-2",
+		radioContainer: "flex gap-4 flex-wrap w-full",
+		radioLabel: "flex items-center gap-2 cursor-pointer"
+	};
 	// Focus management
 	React.useEffect(() => {
 		if (isOpen) {
@@ -106,14 +118,15 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 		return () => document.removeEventListener("keydown", handleTabKey);
 	}, [isOpen]);
 
-	const [shouldBeOpen, setShouldBeOpen] = useState(false);
-	useEffect(() => {
-		if (isOpen) {
-			requestAnimationFrame(() => setShouldBeOpen(true));
-		} else {
-			setShouldBeOpen(false);
+	// Animation variants for the settings panel
+	const panelVariants = {
+		hidden: {
+			x: "-100%"
+		},
+		visible: {
+			x: 0
 		}
-	}, [isOpen]);
+	};
 
 	const themeMode =
 		selectedThemeMode === "light"
@@ -173,17 +186,25 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 	
 
 	return (
-		<div
-			id={id}
-			className={`settings-panel fixed top-0 left-0 h-full max-w-[400px] w-full z-[1002] bg-base-200 shadow-2xl transition-all duration-300 ease-in-out ${
-				shouldBeOpen ? "open left-0" : "-left-[400px]"
-			}`}
-			role="dialog"
-			aria-modal="true"
-			aria-labelledby="settings-title"
-			aria-describedby="settings-description"
-		>
-			<div className="flex items-center justify-between px-6 py-4 border-b border-base-300 bg-base-100 rounded-t-xl">
+		<AnimatePresence>
+			{isOpen && (
+				<motion.div
+					id={id}
+					className="settings-panel fixed top-0 left-0 h-full max-w-[400px] w-full z-[1002] bg-base-200 noise shadow-2xl flex flex-col"
+					role="dialog"
+					aria-modal="true"
+					aria-labelledby="settings-title"
+					aria-describedby="settings-description"
+					variants={panelVariants}
+					initial="hidden"
+					animate="visible"
+					exit="hidden"
+					transition={{
+						duration: 0.3,
+						ease: "easeInOut"
+					}}
+				>
+			<div className="flex items-center justify-between px-6 py-4 border-b border-base-300 bg-base-100 flex-shrink-0">
 				<h3 id="settings-title" className="text-2xl font-bold">
 					Settings
 				</h3>
@@ -197,19 +218,19 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 						onClick={onClose}
 						aria-label="Close settings"
 					>
-						✕
+						<span className="text-xl">✕</span>
 					</button>
 				</div>
 			</div>
 			<div
-				className="settings-content p-6 flex flex-col gap-8 overflow-y-auto"
+				className="settings-content p-6 flex flex-col gap-6 overflow-y-auto flex-1 min-h-0"
 				id="settings-description"
 			>
-				<div className="form-control gap-2">
-					<label className="label text-lg font-semibold">
+				<div className={styles.sectionContainer}>
+					<label className={styles.sectionTitle}>
 						Theme
 					</label>
-					<div className="flex gap-2 flex-wrap">
+					<div className={styles.buttonContainer}>
 						{(() => {
 							const isDarkMode =
 								selectedThemeMode === "dark" ||
@@ -230,11 +251,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 							return currentCategory.themes.map((theme) => (
 								<button
 									key={theme.id}
-									className={`btn btn-sm ${
+									className={
 										selectedTheme === theme.id
-											? "btn-primary"
-											: "btn-soft"
-									}`}
+											? styles.selectedButton
+											: styles.unselectedButton
+									}
 									onClick={() => onThemeChange(theme.id)}
 								>
 									{theme.name}
@@ -243,18 +264,18 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 						})()}
 					</div>
 				</div>
-				<div className="divider my-0" />
-				<div className="form-control gap-2">
-					<label className="label text-lg font-semibold">Fonts</label>
-					<div className="flex gap-2 flex-wrap">
+				<div className={styles.divider} />
+				<div className={styles.sectionContainer}>
+					<label className={styles.sectionTitle}>Fonts</label>
+					<div className={styles.buttonContainer}>
 						{Object.entries(quoteFonts).map(([key, font]) => (
 							<button
 								key={key}
-								className={`btn btn-sm ${
+								className={
 									selectedQuoteFont === key
-										? "btn-primary"
-										: "btn-soft"
-								}`}
+										? styles.selectedButton
+										: styles.unselectedButton
+								}
 								onClick={() => onQuoteFontChange(key)}
 								style={{ fontFamily: font.family }}
 							>
@@ -263,36 +284,49 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 						))}
 					</div>
 				</div>
-				<div className="divider my-0" />
-				<div className="form-control gap-2">
-					<label className="label text-lg font-semibold">
+				<div className={styles.divider} />
+				<div className={styles.sectionContainer}>
+					<label className={styles.sectionTitle}>
 						Color
 					</label>
-					<div className="flex gap-2 flex-wrap w-full">
+					<div className={styles.radioContainer}>
 						{Object.entries(semanticColorThemes).map(
 							([key, theme]) => {
 								const isActive = selectedSemanticTheme === key;
+								let radioClass = "radio";
+								
+								// Use the semantic color for the radio button
+								switch (key) {
+									case 'primary':
+										radioClass += " radio-primary";
+										break;
+									case 'secondary':
+										radioClass += " radio-secondary";
+										break;
+									case 'accent':
+										radioClass += " radio-accent";
+										break;
+									case 'neutral':
+										radioClass += " radio-neutral";
+										break;
+									default:
+										radioClass += " radio-primary";
+								}
+								
 								return (
-									<button
+									<label
 										key={key}
-										className={`btn btn-sm ${
-											isActive
-												? "btn-primary shadow-lg"
-												: "btn-soft"
-										}`}
-										onClick={() =>
-											onSemanticThemeChange(key)
-										}
+										className={styles.radioLabel}
 									>
-										<span
-											className={`${theme.className} font-medium`}
-										>
-											A
-										</span>
-										<span className="ml-2">
-											{theme.name}
-										</span>
-									</button>
+										<input
+											type="radio"
+											name="semantic-theme"
+											className={radioClass}
+											checked={isActive}
+											onChange={() => onSemanticThemeChange(key)}
+										/>
+
+									</label>
 								);
 							}
 						)}
@@ -301,6 +335,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 				{/* <div className="divider my-0" /> */}
 				{/* <Sliders /> */}
 			</div>
-		</div>
+				</motion.div>
+			)}
+		</AnimatePresence>
 	);
 };

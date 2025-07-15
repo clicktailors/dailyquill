@@ -18,6 +18,12 @@ export interface ExtensionSettings {
 		source: string
 		timestamp: number
 	}
+	prefetchedQuote?: {
+		text: string
+		author: string
+		source: string
+		timestamp: number
+	}
 }
 
 // Development mode detection
@@ -163,6 +169,50 @@ class StorageService {
 			await this.saveSettings({ selectedUIFont: font })
 		} catch (error) {
 			console.warn('Save selected UI font error:', error);
+		}
+	}
+
+	async cachePrefetchedQuote(quote: { text: string; author: string; source: string }): Promise<void> {
+		try {
+			const prefetchedQuote = {
+				...quote,
+				timestamp: Date.now()
+			}
+			await this.saveSettings({ prefetchedQuote })
+		} catch (error) {
+			console.warn('Cache prefetched quote error:', error);
+		}
+	}
+
+	async getPrefetchedQuote(): Promise<{ text: string; author: string; source: string } | null> {
+		try {
+			const settings = await this.getSettings()
+			const prefetched = settings.prefetchedQuote
+			
+			if (!prefetched) return null
+			
+			// Prefetched quotes are valid for 1 hour
+			const isValid = Date.now() - prefetched.timestamp < 60 * 60 * 1000
+			return isValid ? prefetched : null
+		} catch (error) {
+			console.warn('Get prefetched quote error:', error);
+			return null;
+		}
+	}
+
+	async consumePrefetchedQuote(): Promise<{ text: string; author: string; source: string } | null> {
+		try {
+			const prefetched = await this.getPrefetchedQuote()
+			if (prefetched) {
+				// Move prefetched quote to current cache
+				await this.cacheQuote(prefetched)
+				// Clear prefetched quote
+				await this.saveSettings({ prefetchedQuote: undefined })
+			}
+			return prefetched
+		} catch (error) {
+			console.warn('Consume prefetched quote error:', error);
+			return null;
 		}
 	}
 }

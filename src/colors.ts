@@ -124,34 +124,40 @@ export const daisyThemeCategories = {
 // Font system for quotes and UI
 export const quoteFonts = {
 	classic: {
-		name: 'Classic Serif',
+		name: 'Garamond',
 		family: 'Cormorant Garamond, serif',
 		googleFont: 'Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500',
 		category: 'serif'
 	},
 	modern: {
-		name: 'Modern Sans',
+		name: 'Inter',
 		family: 'Inter, sans-serif',
 		googleFont: 'Inter:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400',
 		category: 'sans-serif'
 	},
 	elegant: {
-		name: 'Elegant Script',
+		name: 'Playfair',
 		family: 'Playfair Display, serif',
 		googleFont: 'Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500',
 		category: 'serif'
 	},
 	minimal: {
-		name: 'Minimal',
+		name: 'Source Sans Pro',
 		family: 'Source Sans Pro, sans-serif',
 		googleFont: 'Source+Sans+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400',
 		category: 'sans-serif'
 	},
 	poetry: {
-		name: 'Poetry',
+		name: 'Lora',
 		family: 'Lora, serif',
 		googleFont: 'Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500',
 		category: 'serif'
+	},
+	monospace: {
+		name: 'Ubuntu',
+		family: 'Ubuntu Mono, monospace',
+		googleFont: 'Ubuntu+Mono:wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500',
+		category: 'monospace'
 	}
 };
 

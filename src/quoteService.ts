@@ -133,6 +133,19 @@ class QuoteService {
 			return this.getRandomQuote()
 		}
 	}
+
+	async prefetchNextQuote(): Promise<void> {
+		try {
+			if (isDev) console.log('Prefetching next quote...');
+			const nextQuote = await this.getRandomQuote();
+			// Import storage service dynamically to avoid circular dependency
+			const { storageService } = await import('./storageService');
+			await storageService.cachePrefetchedQuote(nextQuote);
+			if (isDev) console.log('Next quote prefetched:', nextQuote);
+		} catch (error) {
+			if (isDev) console.warn('Prefetch failed:', error);
+		}
+	}
 }
 
 export const quoteService = new QuoteService()

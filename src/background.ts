@@ -28,6 +28,9 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 			author: quote.author,
 			source: quote.source || 'Unknown'
 		})
+		
+		// Also prefetch the next quote for instant refresh
+		await quoteService.prefetchNextQuote()
 	}
 })
 

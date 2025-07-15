@@ -10,7 +10,7 @@ export default function DayNightSwitch({ selectedThemeMode, onThemeModeChange }:
 				return (
 					// Sun icon
 					<svg
-						className="h-6 w-6 fill-current"
+						className="h-5 w-5 fill-current"
 						xmlns="http://www.w3.org/2000/svg"
 						viewBox="0 0 24 24"
 					>
@@ -21,7 +21,7 @@ export default function DayNightSwitch({ selectedThemeMode, onThemeModeChange }:
 				return (
 					// Moon icon
 					<svg
-						className="h-6 w-6 fill-current"
+						className="h-5 w-5 fill-current"
 						xmlns="http://www.w3.org/2000/svg"
 						viewBox="0 0 24 24"
 					>
@@ -32,7 +32,7 @@ export default function DayNightSwitch({ selectedThemeMode, onThemeModeChange }:
 				return (
 					// Computer monitor icon
 					<svg
-						className="h-6 w-6 fill-current"
+						className="h-5 w-5 fill-current"
 						xmlns="http://www.w3.org/2000/svg"
 						viewBox="0 0 24 24"
 					>
