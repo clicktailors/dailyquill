@@ -12,6 +12,9 @@ export interface ExtensionSettings {
 	selectedLightTheme?: string
 	selectedDarkTheme?: string
 	selectedSemanticTheme?: string
+	backgroundLightnessLight?: number
+	backgroundLightnessDark?: number
+	fontSize?: number
 	cachedQuote?: {
 		text: string
 		author: string
