@@ -18,7 +18,8 @@ export const SupportModal: React.FC<SupportModalProps> = ({
 		{
 			variant: "buyMeACoffee",
 			label: "Buy Me a Coffee",
-			href: "https://www.buymeacoffee.com/tatiacodes",
+			// href: "https://www.buymeacoffee.com/tatiacodes",
+			href: "https://square.link/u/9zMRTcXV",
 		},
 		{
 			variant: "github",
@@ -31,6 +32,8 @@ export const SupportModal: React.FC<SupportModalProps> = ({
 			href: "https://clicktailors.com",
 		},
 	];
+
+	const feedbackLink = "https://forms.gle/t52WcmHZYyYfkdiy8";
 
 	const supportText = [
 		"Support me by buying me a coffee, or by checking out my GitHub repository. Themes and UI for this project were built using TailwindCSS and DaisyUI.",
@@ -94,6 +97,14 @@ export const SupportModal: React.FC<SupportModalProps> = ({
 							{supportLinks.map((link) => (
 								<Buttons key={link.variant} variant={link.variant as ButtonVariant} href={link.href} label={link.label} />
 							))}
+						</div>
+
+						<div className="divider"></div>
+						<div className="text-sm text-gray-500 text-center mb-6 flex flex-col gap-2 items-center">
+							<p className="text-sm text-gray-500 text-center">
+								Have feedback or suggestions?
+							</p>
+							<Buttons variant="feedback" href={feedbackLink} label="Submit Feedback" />
 						</div>
 
 					</div>

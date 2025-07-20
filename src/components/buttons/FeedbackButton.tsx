@@ -1,15 +1,15 @@
 import React from "react";
 
-interface ClickTailorsButtonProps {
+interface FeedbackButtonProps {
 	href?: string;
 	className?: string;
 	label?: string;
 }
 
-export const ClickTailorsButton: React.FC<ClickTailorsButtonProps> = ({
-	href = "https://clicktailors.com",
+export const FeedbackButton: React.FC<FeedbackButtonProps> = ({
+	href = "https://forms.gle/9zMRTcXV",
 	className = "",
-	label = "ClickTailors",
+	label = "Submit Feedback",
 }) => {
 	return (
 		<a
@@ -17,7 +17,7 @@ export const ClickTailorsButton: React.FC<ClickTailorsButtonProps> = ({
 			target="_blank"
 			rel="noopener noreferrer"
 			className={`btn btn-sm gap-2 bg-gray-800 text-white border-gray-600 hover:bg-gray-700 hover:border-gray-700 hover:scale-105 transition-all duration-200 shadow-md hover:shadow-lg ${className}`}
-			title="ClickTailors"
+			title="Feedback"
 		>
 			{label}
 		</a>

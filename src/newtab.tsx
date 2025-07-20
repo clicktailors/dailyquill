@@ -2,13 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import ReactDOM from "react-dom/client";
 import { quoteService, type Quote } from "./quoteService";
 import { storageService } from "./storageService";
-import {
-	quoteFonts,
-	uiFonts,
-	defaultFonts,
-	semanticColorThemes,
-	daisyThemeCategories,
-} from "./colors";
+import { quoteFonts, uiFonts, defaultFonts } from "./colors";
 import { SettingsPanel } from "./SettingsPanel";
 import SwipeQuote from "./components/SwipeQuote";
 import PlainQuote from "./components/PlainQuote";
