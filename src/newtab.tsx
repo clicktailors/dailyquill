@@ -2,15 +2,22 @@ import { useState, useEffect, useRef } from 'react'
 import ReactDOM from 'react-dom/client'
 import { quoteService, type Quote } from './quoteService'
 import { storageService } from './storageService'
-import { colorThemes, baseHueMap, quoteFonts, uiFonts, defaultFonts, semanticColorThemes, daisyThemeCategories } from './colors'
+import { quoteFonts, uiFonts, defaultFonts, semanticColorThemes, daisyThemeCategories } from './colors'
 import { SettingsPanel } from './SettingsPanel'
 import SwipeQuote from './components/SwipeQuote'
 import PlainQuote from './components/PlainQuote'
 import './newtab.css'
 
-// Color theme options
-const initialSaturation = 30;
-const initialLightness = 95;
+// Font size scales for quotes (in rem values)
+const fontSizeSteps = [
+  { name: 'Extra Small', regular: { base: '1.25rem', md: '1.5rem', lg: '1.875rem' }, monospace: { base: '1rem', md: '1.25rem', lg: '1.5rem' } },
+  { name: 'Small', regular: { base: '1.5rem', md: '1.875rem', lg: '2.25rem' }, monospace: { base: '1.25rem', md: '1.5rem', lg: '1.875rem' } },
+  { name: 'Medium Small', regular: { base: '1.875rem', md: '2.25rem', lg: '3rem' }, monospace: { base: '1.5rem', md: '1.875rem', lg: '2.25rem' } },
+  { name: 'Medium', regular: { base: '2.25rem', md: '3rem', lg: '3.75rem' }, monospace: { base: '1.875rem', md: '2.25rem', lg: '3rem' } },
+  { name: 'Medium Large', regular: { base: '3rem', md: '3.75rem', lg: '4.5rem' }, monospace: { base: '2.25rem', md: '3rem', lg: '3.75rem' } },
+  { name: 'Large', regular: { base: '3.25rem', md: '4rem', lg: '4.75rem' }, monospace: { base: '2.5rem', md: '3.25rem', lg: '4rem' } },
+  { name: 'Extra Large', regular: { base: '3.75rem', md: '4.5rem', lg: '5.25rem' }, monospace: { base: '3rem', md: '3.75rem', lg: '4.5rem' } }
+];
 
 type ThemeMode = 'system' | 'light' | 'dark';
 
@@ -25,9 +32,9 @@ function NewTabApp() {
   const [showSettings, setShowSettings] = useState(false)
   const [settingsPanelVisible, setSettingsPanelVisible] = useState(false)
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const [selectedTheme, setSelectedTheme] = useState<keyof typeof colorThemes>('default')
-  const [selectedSaturation, setSelectedSaturation] = useState(initialSaturation)
-  const [selectedLightness, setSelectedLightness] = useState(initialLightness)
+  const [backgroundLightnessLight, setBackgroundLightnessLight] = useState(50)
+  const [backgroundLightnessDark, setBackgroundLightnessDark] = useState(50)
+  const [fontSize, setFontSize] = useState(3) // Default to medium (index 3)
   const [selectedThemeMode, setSelectedThemeMode] = useState<ThemeMode>('system');
   const [selectedQuoteFont, setSelectedQuoteFont] = useState(defaultFonts.quote)
   const [selectedUIFont, setSelectedUIFont] = useState(defaultFonts.ui)
@@ -35,19 +42,10 @@ function NewTabApp() {
   const [selectedDarkTheme, setSelectedDarkTheme] = useState('dark')
   const [selectedSemanticTheme, setSelectedSemanticTheme] = useState('primary')
 
-  // Compute the base hue for the selected theme
-  const baseHue = baseHueMap[selectedTheme];
-  const dynamicPrimary = `hsl(${baseHue}, ${selectedSaturation}%, ${selectedLightness}%)`;
-
   // Load saved settings on mount
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const savedTheme = await storageService.getSelectedTheme()
-        if (savedTheme && savedTheme in colorThemes) {
-          setSelectedTheme(savedTheme as keyof typeof colorThemes)
-        }
-        
         const saved = await storageService.getSettings();
         if (saved) {
           if (saved.themeMode) {
@@ -59,6 +57,15 @@ function NewTabApp() {
           if (saved.selectedUIFont) {
             setSelectedUIFont(saved.selectedUIFont);
           }
+          if (saved.backgroundLightnessLight !== undefined) {
+            setBackgroundLightnessLight(saved.backgroundLightnessLight);
+          }
+          if (saved.backgroundLightnessDark !== undefined) {
+            setBackgroundLightnessDark(saved.backgroundLightnessDark);
+          }
+          if (saved.fontSize !== undefined) {
+            setFontSize(saved.fontSize);
+          }
         }
       } catch (error) {
         // Silently handle loading errors
@@ -69,21 +76,7 @@ function NewTabApp() {
 
   // Load Google Fonts
   useEffect(() => {
-    const loadFonts = () => {
-      const fontsToLoad = [
-        quoteFonts[selectedQuoteFont as keyof typeof quoteFonts]?.googleFont,
-        uiFonts[selectedUIFont as keyof typeof uiFonts]?.googleFont
-      ].filter(Boolean);
-
-      if (fontsToLoad.length > 0) {
-        const link = document.createElement('link');
-        link.href = `https://fonts.googleapis.com/css2?${fontsToLoad.join('&')}&display=swap`;
-        link.rel = 'stylesheet';
-        document.head.appendChild(link);
-      }
-    };
-
-    loadFonts();
+    // Remove dynamic font loading - fonts will be loaded via CSS imports instead
   }, [selectedQuoteFont, selectedUIFont]);
 
   // Save font preferences when they change
@@ -94,6 +87,24 @@ function NewTabApp() {
   useEffect(() => {
     storageService.saveSelectedUIFont(selectedUIFont);
   }, [selectedUIFont]);
+
+  // Save background lightness when it changes
+  useEffect(() => {
+    storageService.saveSettings({ backgroundLightnessLight });
+  }, [backgroundLightnessLight]);
+
+  useEffect(() => {
+    storageService.saveSettings({ backgroundLightnessDark });
+  }, [backgroundLightnessDark]);
+
+  // Save font size when it changes
+  useEffect(() => {
+    storageService.saveSettings({ fontSize });
+  }, [fontSize]);
+
+
+
+
 
   // Apply fonts to CSS variables
   useEffect(() => {
@@ -108,21 +119,6 @@ function NewTabApp() {
     }
   }, [selectedQuoteFont, selectedUIFont]);
 
-  // Load saved theme on mount
-  useEffect(() => {
-    const loadTheme = async () => {
-      try {
-        const savedTheme = await storageService.getSelectedTheme()
-        if (savedTheme && savedTheme in colorThemes) {
-          setSelectedTheme(savedTheme as keyof typeof colorThemes)
-        }
-      } catch (error) {
-        // Silently handle theme loading errors
-      }
-    }
-    loadTheme()
-  }, [])
-
   // Load saved theme mode on mount
   useEffect(() => {
     const loadThemeMode = async () => {
@@ -133,36 +129,6 @@ function NewTabApp() {
     };
     loadThemeMode();
   }, []);
-
-  // Save theme when it changes
-  const handleThemeChange = async (theme: keyof typeof colorThemes) => {
-    setSelectedTheme(theme)
-    const newLightness = getDefaultLightness(theme, isDark);
-    const newSaturation = getDefaultSaturation(theme, isDark);
-    if (selectedLightness < lightnessRange.min || selectedLightness > lightnessRange.max) {
-      setSelectedLightness(newLightness);
-    }
-    if (selectedSaturation < saturationRange.min || selectedSaturation > saturationRange.max) {
-      setSelectedSaturation(newSaturation);
-    }
-    try {
-      await storageService.saveSelectedTheme(theme)
-      // Announce theme change to screen readers
-      const announcement = document.createElement('div')
-      announcement.setAttribute('aria-live', 'polite')
-      announcement.setAttribute('aria-atomic', 'true')
-      announcement.style.position = 'absolute'
-      announcement.style.left = '-10000px'
-      announcement.style.width = '1px'
-      announcement.style.height = '1px'
-      announcement.style.overflow = 'hidden'
-      announcement.textContent = `Theme changed to ${colorThemes[theme].name}`
-      document.body.appendChild(announcement)
-      setTimeout(() => document.body.removeChild(announcement), 1000)
-    } catch (error) {
-      // Silently handle theme saving errors
-    }
-  }
 
   // Save theme mode when it changes
   useEffect(() => {
@@ -185,15 +151,7 @@ function NewTabApp() {
     }
   }, [selectedThemeMode]);
 
-  // Handle saturation change
-  const handleSaturationChange = (saturation: number) => {
-    setSelectedSaturation(saturation)
-  }
 
-  // Handle lightness change
-  const handleLightnessChange = (lightness: number) => {
-    setSelectedLightness(lightness)
-  }
 
   // Handle font changes
   const handleQuoteFontChange = (font: string) => {
@@ -320,61 +278,56 @@ function NewTabApp() {
   const isDark = (selectedThemeMode === 'dark') ||
     (selectedThemeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
-  const lightModeLightness = { min: 70, max: 100, default: 95 };
-  const darkModeLightness = { min: 10, max: 40, default: 20 };
-  const lightModeSaturation = { min: 10, max: 60, default: 30 };
-  const darkModeSaturation = { min: 10, max: 60, default: 30 };
-
-  const lightnessRange = isDark ? darkModeLightness : lightModeLightness;
-  const saturationRange = isDark ? darkModeSaturation : lightModeSaturation;
-
-  const getDefaultLightness = (theme: keyof typeof colorThemes, isDark: boolean) => {
-    if (theme === 'sepia') return isDark ? 20 : 80;
-    return isDark ? 20 : 95;
-  };
-  const getDefaultSaturation = (theme: keyof typeof colorThemes, isDark: boolean) => {
-    // You can customize per-theme if desired
-    return 30;
+  // Get current background lightness based on theme mode
+  const currentBackgroundLightness = isDark ? backgroundLightnessDark : backgroundLightnessLight;
+  
+  // Handler for background lightness changes
+  const handleBackgroundLightnessChange = (value: number) => {
+    if (isDark) {
+      setBackgroundLightnessDark(value);
+    } else {
+      setBackgroundLightnessLight(value);
+    }
   };
 
-  // When theme mode or theme changes, reset sliders if out of range
-  useEffect(() => {
-    const newLightness = getDefaultLightness(selectedTheme, isDark);
-    const newSaturation = getDefaultSaturation(selectedTheme, isDark);
-    if (selectedLightness < lightnessRange.min || selectedLightness > lightnessRange.max) {
-      setSelectedLightness(newLightness);
-    }
-    if (selectedSaturation < saturationRange.min || selectedSaturation > saturationRange.max) {
-      setSelectedSaturation(newSaturation);
-    }
-    // eslint-disable-next-line
-  }, [isDark, selectedTheme]);
+  // Handler for font size changes
+  const handleFontSizeChange = (value: number) => {
+    setFontSize(value);
+  };
 
-  // Apply theme styles to the page
+  // Apply font size to CSS variables
   useEffect(() => {
-    const applyTheme = () => {
-      // Always use dynamicPrimary for both modes
-      document.documentElement.style.setProperty('--theme-primary', dynamicPrimary);
-      let mode: 'light' | 'dark';
-      if (selectedThemeMode === 'system') {
-        mode = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      } else {
-        mode = selectedThemeMode;
-      }
-      const theme = colorThemes[selectedTheme];
-      document.documentElement.style.setProperty('--theme-secondary', theme[mode].secondary);
-      document.documentElement.style.setProperty('--theme-mode', mode);
-      document.documentElement.style.setProperty('--theme-text', mode === 'dark' ? '#e8e8e8' : '#2c2c2c');
-    };
-    applyTheme();
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = () => applyTheme();
-    if (selectedThemeMode === 'system') {
-      mediaQuery.addEventListener('change', handleChange);
-      return () => mediaQuery.removeEventListener('change', handleChange);
+    const fontStep = fontSizeSteps[fontSize];
+    if (fontStep) {
+      // Set CSS custom properties for responsive font sizes
+      document.documentElement.style.setProperty('--quote-font-size-base', fontStep.regular.base);
+      document.documentElement.style.setProperty('--quote-font-size-md', fontStep.regular.md);
+      document.documentElement.style.setProperty('--quote-font-size-lg', fontStep.regular.lg);
+      document.documentElement.style.setProperty('--quote-font-size-mono-base', fontStep.monospace.base);
+      document.documentElement.style.setProperty('--quote-font-size-mono-md', fontStep.monospace.md);
+      document.documentElement.style.setProperty('--quote-font-size-mono-lg', fontStep.monospace.lg);
     }
-    return;
-  }, [selectedTheme, selectedSaturation, selectedLightness, selectedThemeMode, dynamicPrimary]);
+  }, [fontSize]);
+
+  // Apply background lightness using CSS overlay
+  useEffect(() => {
+    // Calculate overlay opacity and color
+    if (currentBackgroundLightness === 50) {
+      // Remove overlay at neutral position
+      document.documentElement.style.removeProperty('--bg-overlay-color');
+      document.documentElement.style.removeProperty('--bg-overlay-opacity');
+    } else if (currentBackgroundLightness > 50) {
+      // Lighter: white overlay
+      const opacity = (currentBackgroundLightness - 50) / 50 * 0.8; // Max 80% opacity
+      document.documentElement.style.setProperty('--bg-overlay-color', '255, 255, 255');
+      document.documentElement.style.setProperty('--bg-overlay-opacity', opacity.toString());
+    } else {
+      // Darker: black overlay
+      const opacity = (50 - currentBackgroundLightness) / 50 * 0.8; // Max 80% opacity
+      document.documentElement.style.setProperty('--bg-overlay-color', '0, 0, 0');
+      document.documentElement.style.setProperty('--bg-overlay-opacity', opacity.toString());
+    }
+  }, [currentBackgroundLightness]);
 
   // Handle escape key to close settings panel
   useEffect(() => {
@@ -455,10 +408,25 @@ function NewTabApp() {
   }, [])
 
   return (
-    <div className={
-      `min-h-screen w-full flex flex-col items-center justify-center bg-base-200 noise transition-colors duration-300` +
-      (isDark ? ' text-base-content' : '')
-    }>
+    <div 
+      className={
+        `min-h-screen w-full flex flex-col items-center justify-center bg-base-200 noise transition-colors duration-300 relative` +
+        (isDark ? ' text-base-content' : '')
+      }
+      style={{
+        position: 'relative'
+      }}
+    >
+      {/* Background lightness overlay */}
+      {currentBackgroundLightness !== 50 && (
+        <div 
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundColor: `rgba(var(--bg-overlay-color, 0, 0, 0), var(--bg-overlay-opacity, 0))`,
+            zIndex: 0
+          }}
+        />
+      )}
       {/* Settings button in bottom left */}
       <button 
         className="btn btn-circle btn-ghost fixed bottom-6 left-6 z-50"
@@ -484,7 +452,7 @@ function NewTabApp() {
       </button>
 
       {/* Main content */}
-      <main className="flex flex-1 flex-col items-center justify-center w-full px-4">
+      <main className="flex flex-1 flex-col items-center justify-center w-full px-4 relative z-10">
         {isPlainQuote ? (
           <PlainQuote 
             quote={quote}
@@ -515,20 +483,9 @@ function NewTabApp() {
           <SettingsPanel
             isOpen={showSettings}
             onClose={() => setShowSettings(false)}
-            selectedTheme={selectedTheme}
-            onThemeChange={(theme) => handleThemeChange(theme as keyof typeof colorThemes)}
-            selectedSaturation={selectedSaturation}
-            onSaturationChange={handleSaturationChange}
-            selectedLightness={selectedLightness}
-            onLightnessChange={handleLightnessChange}
-            dynamicPrimary={dynamicPrimary}
             id="settings-panel"
             selectedThemeMode={selectedThemeMode}
             onThemeModeChange={handleThemeModeChange}
-            lightnessMin={lightnessRange.min}
-            lightnessMax={lightnessRange.max}
-            saturationMin={saturationRange.min}
-            saturationMax={saturationRange.max}
             selectedQuoteFont={selectedQuoteFont}
             onQuoteFontChange={handleQuoteFontChange}
             selectedUIFont={selectedUIFont}
@@ -539,6 +496,13 @@ function NewTabApp() {
             onDarkThemeChange={handleDarkThemeChange}
             selectedSemanticTheme={selectedSemanticTheme}
             onSemanticThemeChange={handleSemanticThemeChange}
+            backgroundLightness={currentBackgroundLightness}
+            onBackgroundLightnessChange={handleBackgroundLightnessChange}
+            lightnessMin={0}
+            lightnessMax={100}
+            fontSize={fontSize}
+            onFontSizeChange={handleFontSizeChange}
+            fontSizeSteps={fontSizeSteps}
           />
         </div>
       )}

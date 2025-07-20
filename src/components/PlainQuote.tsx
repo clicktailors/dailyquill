@@ -20,9 +20,9 @@ export default function PlainQuote({ quote, loading, selectedSemanticTheme, sele
 				) : quote ? (
 					<>
 						<blockquote
-							className={`text-center font-serif text-3xl md:text-4xl lg:text-5xl leading-tight mb-8 relative ${
+							className={`text-center font-serif leading-tight mb-8 relative ${
 								selectedQuoteFont === 'monospace' 
-									? 'text-2xl md:text-3xl lg:text-4xl' 
+									? 'monospace-font' 
 									: 'italic'
 							}`}
 							style={{ fontFamily: `var(--quote-font)` }}

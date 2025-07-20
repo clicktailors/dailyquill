@@ -12,6 +12,9 @@ export interface ExtensionSettings {
 	selectedLightTheme?: string
 	selectedDarkTheme?: string
 	selectedSemanticTheme?: string
+	backgroundLightnessLight?: number
+	backgroundLightnessDark?: number
+	fontSize?: number
 	cachedQuote?: {
 		text: string
 		author: string
@@ -27,7 +30,7 @@ export interface ExtensionSettings {
 }
 
 // Development mode detection
-const isDev = import.meta.env.DEV || window.location.hostname === 'localhost';
+const isDev = import.meta.env.DEV || (typeof window !== 'undefined' && window.location.hostname === 'localhost');
 
 // Mock Chrome storage for development
 const mockChromeStorage = {
