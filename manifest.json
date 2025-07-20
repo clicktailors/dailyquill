@@ -2,7 +2,7 @@
 	"manifest_version": 3,
 	"name": "Daily Quill",
 	"version": "1.1.2",
-	"description": "Daily Quill is a Chrome extension that generates daily quotes from ZenQuotes and Quote Garden to help you stay motivated and inspired.",
+	"description": "Daily Quill is a Chrome extension that generates daily quotes from ZenQuotes and Quote Garden to keep you motivated and inspired.",
 	"permissions": ["storage", "alarms"],
 	"host_permissions": [
 		"https://zenquotes.io/*",
