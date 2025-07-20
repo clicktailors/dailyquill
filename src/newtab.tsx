@@ -76,21 +76,7 @@ function NewTabApp() {
 
   // Load Google Fonts
   useEffect(() => {
-    const loadFonts = () => {
-      const fontsToLoad = [
-        quoteFonts[selectedQuoteFont as keyof typeof quoteFonts]?.googleFont,
-        uiFonts[selectedUIFont as keyof typeof uiFonts]?.googleFont
-      ].filter(Boolean);
-
-      if (fontsToLoad.length > 0) {
-        const link = document.createElement('link');
-        link.href = `https://fonts.googleapis.com/css2?${fontsToLoad.join('&')}&display=swap`;
-        link.rel = 'stylesheet';
-        document.head.appendChild(link);
-      }
-    };
-
-    loadFonts();
+    // Remove dynamic font loading - fonts will be loaded via CSS imports instead
   }, [selectedQuoteFont, selectedUIFont]);
 
   // Save font preferences when they change

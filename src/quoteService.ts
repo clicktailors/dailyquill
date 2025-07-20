@@ -35,7 +35,9 @@ const fallbackQuotes: Quote[] = [
 ]
 
 // Development mode detection
-const isDev = import.meta.env.DEV || window.location.hostname === 'localhost';
+const isDev = import.meta.env.DEV || (typeof window !== 'undefined' && window.location.hostname === 'localhost');
+
+import { storageService } from './storageService'
 
 class QuoteService {
 	private getRandomFallback(): Quote {
@@ -138,9 +140,7 @@ class QuoteService {
 		try {
 			if (isDev) console.log('Prefetching next quote...');
 			const nextQuote = await this.getRandomQuote();
-			// Import storage service dynamically to avoid circular dependency
-			const { storageService } = await import('./storageService');
-			await storageService.cachePrefetchedQuote(nextQuote);
+			await storageService.cachePrefetchedQuote({ ...nextQuote, source: nextQuote.source ?? 'Unknown' });
 			if (isDev) console.log('Next quote prefetched:', nextQuote);
 		} catch (error) {
 			if (isDev) console.warn('Prefetch failed:', error);

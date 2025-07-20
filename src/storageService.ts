@@ -30,7 +30,7 @@ export interface ExtensionSettings {
 }
 
 // Development mode detection
-const isDev = import.meta.env.DEV || window.location.hostname === 'localhost';
+const isDev = import.meta.env.DEV || (typeof window !== 'undefined' && window.location.hostname === 'localhost');
 
 // Mock Chrome storage for development
 const mockChromeStorage = {

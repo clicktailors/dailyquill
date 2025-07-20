@@ -14,6 +14,7 @@ export default defineConfig(({ command }) => {
 			host: true
 		},
 		build: {
+			modulePreload: { polyfill: false },
 			rollupOptions: {
 				input: {
 					newtab: './newtab.html',

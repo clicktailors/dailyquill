@@ -8,6 +8,7 @@ import {
 } from "./colors";
 import DayNightSwitch from "./components/DayNightSwitch";
 import { MoonIcon, SunIcon } from "./components/Icons";
+import { SupportModal } from "./components/SupportModal";
 
 interface SettingsPanelProps {
 	isOpen: boolean;
@@ -74,6 +75,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 		radioContainer: "flex gap-4 flex-wrap w-full",
 		radioLabel: "flex items-center gap-2 cursor-pointer",
 	};
+
 	// Focus management
 	React.useEffect(() => {
 		if (isOpen) {
@@ -354,31 +356,10 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 						</div>
 					</div>
 
-					{/* Footer Credits */}
-					<div className="px-6 py-4 border-t border-base-300 flex-shrink-0">
-						<div className="flex justify-center items-center gap-3">
-							<div className="text-sm opacity-70">
-								Built with ❤️ by{" "}
-								<a
-									href="https://clicktailors.com"
-									target="_blank"
-									rel="noopener noreferrer"
-									className="link link-accent link-hover font-medium"
-								>
-									ClickTailors
-								</a>
-							</div>
-							{/* <div className="text-sm opacity-70">
-								<a
-									href="https://buymeacoffee.com/clicktailors"
-									target="_blank"
-									rel="noopener noreferrer"
-									className="btn btn-xs btn-outline btn-accent gap-2"
-								>
-									<span>☕</span>
-									Buy me a coffee
-								</a>
-							</div> */}
+					{/* Footer Support */}
+					<div className="px-6 py-4 flex-shrink-0 relative">
+						<div className="flex justify-center">
+							<SupportModal />
 						</div>
 					</div>
 				</motion.div>
