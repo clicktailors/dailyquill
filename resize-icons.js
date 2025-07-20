@@ -39,10 +39,16 @@ async function generateIcons() {
   const sourceIcon = 'icons/icon128.png'; // Updated path to icons folder
   const iconSizes = [16, 32, 48, 128];
   
-  // Create icons directory if it doesn't exist
-  const iconsDir = 'dist/icons';
-  if (!fs.existsSync(iconsDir)) {
-    fs.mkdirSync(iconsDir, { recursive: true });
+  // Create both directories if they don't exist
+  const distIconsDir = 'dist/icons';
+  const publicIconsDir = 'public/icons';
+  
+  if (!fs.existsSync(distIconsDir)) {
+    fs.mkdirSync(distIconsDir, { recursive: true });
+  }
+  
+  if (!fs.existsSync(publicIconsDir)) {
+    fs.mkdirSync(publicIconsDir, { recursive: true });
   }
   
   // Check if source icon exists
@@ -57,14 +63,17 @@ async function generateIcons() {
   
   console.log(`🔄 Generating icons from ${sourceIcon}...`);
   
-  // Generate all icon sizes
+  // Generate all icon sizes for both directories
   for (const size of iconSizes) {
-    const targetPath = path.join(iconsDir, `icon${size}.png`);
-    await createResizedIcon(sourceIcon, targetPath, size);
+    const distTargetPath = path.join(distIconsDir, `icon${size}.png`);
+    const publicTargetPath = path.join(publicIconsDir, `icon${size}.png`);
+    
+    await createResizedIcon(sourceIcon, distTargetPath, size);
+    await createResizedIcon(sourceIcon, publicTargetPath, size);
   }
   
   console.log('\n🎉 Icon generation complete!');
-  console.log('📁 Icons saved to: dist/icons/');
+  console.log('📁 Icons saved to: dist/icons/ and public/icons/');
   console.log('🔧 Run "npm run build:extension" to include them in your extension');
 }
 
