@@ -1,559 +1,662 @@
-import { useState, useEffect, useRef } from 'react'
-import ReactDOM from 'react-dom/client'
-import { quoteService, type Quote } from './quoteService'
-import { storageService } from './storageService'
-import { quoteFonts, uiFonts, defaultFonts, semanticColorThemes, daisyThemeCategories } from './colors'
-import { SettingsPanel } from './SettingsPanel'
-import SwipeQuote from './components/SwipeQuote'
-import PlainQuote from './components/PlainQuote'
-import './newtab.css'
+import { useState, useEffect, useRef } from "react";
+import ReactDOM from "react-dom/client";
+import { quoteService, type Quote } from "./quoteService";
+import { storageService } from "./storageService";
+import {
+	quoteFonts,
+	uiFonts,
+	defaultFonts,
+	semanticColorThemes,
+	daisyThemeCategories,
+} from "./colors";
+import { SettingsPanel } from "./SettingsPanel";
+import SwipeQuote from "./components/SwipeQuote";
+import PlainQuote from "./components/PlainQuote";
+import "./newtab.css";
 
 // Font size scales for quotes (in rem values)
 const fontSizeSteps = [
-  { name: 'Extra Small', regular: { base: '1.25rem', md: '1.5rem', lg: '1.875rem' }, monospace: { base: '1rem', md: '1.25rem', lg: '1.5rem' } },
-  { name: 'Small', regular: { base: '1.5rem', md: '1.875rem', lg: '2.25rem' }, monospace: { base: '1.25rem', md: '1.5rem', lg: '1.875rem' } },
-  { name: 'Medium Small', regular: { base: '1.875rem', md: '2.25rem', lg: '3rem' }, monospace: { base: '1.5rem', md: '1.875rem', lg: '2.25rem' } },
-  { name: 'Medium', regular: { base: '2.25rem', md: '3rem', lg: '3.75rem' }, monospace: { base: '1.875rem', md: '2.25rem', lg: '3rem' } },
-  { name: 'Medium Large', regular: { base: '3rem', md: '3.75rem', lg: '4.5rem' }, monospace: { base: '2.25rem', md: '3rem', lg: '3.75rem' } },
-  { name: 'Large', regular: { base: '3.25rem', md: '4rem', lg: '4.75rem' }, monospace: { base: '2.5rem', md: '3.25rem', lg: '4rem' } },
-  { name: 'Extra Large', regular: { base: '3.75rem', md: '4.5rem', lg: '5.25rem' }, monospace: { base: '3rem', md: '3.75rem', lg: '4.5rem' } }
+	{
+		name: "Extra Small",
+		regular: { base: "1.25rem", md: "1.5rem", lg: "1.875rem" },
+		monospace: { base: "1rem", md: "1.25rem", lg: "1.5rem" },
+	},
+	{
+		name: "Small",
+		regular: { base: "1.5rem", md: "1.875rem", lg: "2.25rem" },
+		monospace: { base: "1.25rem", md: "1.5rem", lg: "1.875rem" },
+	},
+	{
+		name: "Medium Small",
+		regular: { base: "1.875rem", md: "2.25rem", lg: "3rem" },
+		monospace: { base: "1.5rem", md: "1.875rem", lg: "2.25rem" },
+	},
+	{
+		name: "Medium",
+		regular: { base: "2.25rem", md: "3rem", lg: "3.75rem" },
+		monospace: { base: "1.875rem", md: "2.25rem", lg: "3rem" },
+	},
+	{
+		name: "Medium Large",
+		regular: { base: "3rem", md: "3.75rem", lg: "4.5rem" },
+		monospace: { base: "2.25rem", md: "3rem", lg: "3.75rem" },
+	},
+	{
+		name: "Large",
+		regular: { base: "3.25rem", md: "4rem", lg: "4.75rem" },
+		monospace: { base: "2.5rem", md: "3.25rem", lg: "4rem" },
+	},
+	{
+		name: "Extra Large",
+		regular: { base: "3.75rem", md: "4.5rem", lg: "5.25rem" },
+		monospace: { base: "3rem", md: "3.75rem", lg: "4.5rem" },
+	},
 ];
 
-type ThemeMode = 'system' | 'light' | 'dark';
+type ThemeMode = "system" | "light" | "dark";
 
 // Development mode detection
-const isDev = import.meta.env.DEV || window.location.hostname === 'localhost';
+const isDev = import.meta.env.DEV || window.location.hostname === "localhost";
 
 const isPlainQuote = true;
 
 function NewTabApp() {
-  const [quote, setQuote] = useState<Quote | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [showSettings, setShowSettings] = useState(false)
-  const [settingsPanelVisible, setSettingsPanelVisible] = useState(false)
-  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const [backgroundLightnessLight, setBackgroundLightnessLight] = useState(50)
-  const [backgroundLightnessDark, setBackgroundLightnessDark] = useState(50)
-  const [fontSize, setFontSize] = useState(3) // Default to medium (index 3)
-  const [selectedThemeMode, setSelectedThemeMode] = useState<ThemeMode>('system');
-  const [selectedQuoteFont, setSelectedQuoteFont] = useState(defaultFonts.quote)
-  const [selectedUIFont, setSelectedUIFont] = useState(defaultFonts.ui)
-  const [selectedLightTheme, setSelectedLightTheme] = useState('light')
-  const [selectedDarkTheme, setSelectedDarkTheme] = useState('dark')
-  const [selectedSemanticTheme, setSelectedSemanticTheme] = useState('primary')
+	const [quote, setQuote] = useState<Quote | null>(null);
+	const [loading, setLoading] = useState(true);
+	const [showSettings, setShowSettings] = useState(false);
+	const [settingsPanelVisible, setSettingsPanelVisible] = useState(false);
+	const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+	const [backgroundLightnessLight, setBackgroundLightnessLight] =
+		useState(50);
+	const [backgroundLightnessDark, setBackgroundLightnessDark] = useState(50);
+	const [fontSize, setFontSize] = useState(3); // Default to medium (index 3)
+	const [selectedThemeMode, setSelectedThemeMode] =
+		useState<ThemeMode>("system");
+	const [selectedQuoteFont, setSelectedQuoteFont] = useState(
+		defaultFonts.quote
+	);
+	const [selectedUIFont, setSelectedUIFont] = useState(defaultFonts.ui);
+	const [selectedLightTheme, setSelectedLightTheme] = useState("light");
+	const [selectedDarkTheme, setSelectedDarkTheme] = useState("dark");
+	const [selectedSemanticTheme, setSelectedSemanticTheme] =
+		useState("primary");
 
-  // Load saved settings on mount
-  useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        const saved = await storageService.getSettings();
-        if (saved) {
-          if (saved.themeMode) {
-            setSelectedThemeMode(saved.themeMode);
-          }
-          if (saved.selectedQuoteFont) {
-            setSelectedQuoteFont(saved.selectedQuoteFont);
-          }
-          if (saved.selectedUIFont) {
-            setSelectedUIFont(saved.selectedUIFont);
-          }
-          if (saved.backgroundLightnessLight !== undefined) {
-            setBackgroundLightnessLight(saved.backgroundLightnessLight);
-          }
-          if (saved.backgroundLightnessDark !== undefined) {
-            setBackgroundLightnessDark(saved.backgroundLightnessDark);
-          }
-          if (saved.fontSize !== undefined) {
-            setFontSize(saved.fontSize);
-          }
-        }
-      } catch (error) {
-        // Silently handle loading errors
-      }
-    }
-    loadSettings()
-  }, [])
+	// Load saved settings on mount
+	useEffect(() => {
+		const loadSettings = async () => {
+			try {
+				const saved = await storageService.getSettings();
+				if (saved) {
+					if (saved.themeMode) {
+						setSelectedThemeMode(saved.themeMode);
+					}
+					if (saved.selectedQuoteFont) {
+						setSelectedQuoteFont(saved.selectedQuoteFont);
+					}
+					if (saved.selectedUIFont) {
+						setSelectedUIFont(saved.selectedUIFont);
+					}
+					if (saved.backgroundLightnessLight !== undefined) {
+						setBackgroundLightnessLight(
+							saved.backgroundLightnessLight
+						);
+					}
+					if (saved.backgroundLightnessDark !== undefined) {
+						setBackgroundLightnessDark(
+							saved.backgroundLightnessDark
+						);
+					}
+					if (saved.fontSize !== undefined) {
+						setFontSize(saved.fontSize);
+					}
+				}
+			} catch (error) {
+				// Silently handle loading errors
+			}
+		};
+		loadSettings();
+	}, []);
 
-  // Load Google Fonts
-  useEffect(() => {
-    // Remove dynamic font loading - fonts will be loaded via CSS imports instead
-  }, [selectedQuoteFont, selectedUIFont]);
+	// Load Google Fonts
+	useEffect(() => {
+		// Remove dynamic font loading - fonts will be loaded via CSS imports instead
+	}, [selectedQuoteFont, selectedUIFont]);
 
-  // Save font preferences when they change
-  useEffect(() => {
-    storageService.saveSelectedQuoteFont(selectedQuoteFont);
-  }, [selectedQuoteFont]);
+	// Save font preferences when they change
+	useEffect(() => {
+		storageService.saveSelectedQuoteFont(selectedQuoteFont);
+	}, [selectedQuoteFont]);
 
-  useEffect(() => {
-    storageService.saveSelectedUIFont(selectedUIFont);
-  }, [selectedUIFont]);
+	useEffect(() => {
+		storageService.saveSelectedUIFont(selectedUIFont);
+	}, [selectedUIFont]);
 
-  // Save background lightness when it changes
-  useEffect(() => {
-    storageService.saveSettings({ backgroundLightnessLight });
-  }, [backgroundLightnessLight]);
+	// Save background lightness when it changes
+	useEffect(() => {
+		storageService.saveSettings({ backgroundLightnessLight });
+	}, [backgroundLightnessLight]);
 
-  useEffect(() => {
-    storageService.saveSettings({ backgroundLightnessDark });
-  }, [backgroundLightnessDark]);
+	useEffect(() => {
+		storageService.saveSettings({ backgroundLightnessDark });
+	}, [backgroundLightnessDark]);
 
-  // Save font size when it changes
-  useEffect(() => {
-    storageService.saveSettings({ fontSize });
-  }, [fontSize]);
+	// Save font size when it changes
+	useEffect(() => {
+		storageService.saveSettings({ fontSize });
+	}, [fontSize]);
 
+	// Apply fonts to CSS variables
+	useEffect(() => {
+		const quoteFont =
+			quoteFonts[selectedQuoteFont as keyof typeof quoteFonts];
+		const uiFont = uiFonts[selectedUIFont as keyof typeof uiFonts];
 
+		if (quoteFont) {
+			document.documentElement.style.setProperty(
+				"--quote-font",
+				quoteFont.family
+			);
+		}
+		if (uiFont) {
+			document.documentElement.style.setProperty(
+				"--ui-font",
+				uiFont.family
+			);
+		}
+	}, [selectedQuoteFont, selectedUIFont]);
 
+	// Load saved theme mode on mount
+	useEffect(() => {
+		const loadThemeMode = async () => {
+			const saved = await storageService.getSettings();
+			if (saved && saved.themeMode) {
+				setSelectedThemeMode(saved.themeMode);
+			}
+		};
+		loadThemeMode();
+	}, []);
 
+	// Save theme mode when it changes
+	useEffect(() => {
+		storageService.saveSettings({ themeMode: selectedThemeMode });
+	}, [selectedThemeMode]);
 
-  // Apply fonts to CSS variables
-  useEffect(() => {
-    const quoteFont = quoteFonts[selectedQuoteFont as keyof typeof quoteFonts];
-    const uiFont = uiFonts[selectedUIFont as keyof typeof uiFonts];
-    
-    if (quoteFont) {
-      document.documentElement.style.setProperty('--quote-font', quoteFont.family);
-    }
-    if (uiFont) {
-      document.documentElement.style.setProperty('--ui-font', uiFont.family);
-    }
-  }, [selectedQuoteFont, selectedUIFont]);
+	// Cycle theme mode
+	const handleThemeModeChange = () => {
+		setSelectedThemeMode((prev) =>
+			prev === "system" ? "light" : prev === "light" ? "dark" : "system"
+		);
+	};
 
-  // Load saved theme mode on mount
-  useEffect(() => {
-    const loadThemeMode = async () => {
-      const saved = await storageService.getSettings();
-      if (saved && saved.themeMode) {
-        setSelectedThemeMode(saved.themeMode);
-      }
-    };
-    loadThemeMode();
-  }, []);
+	// Apply theme mode override
+	useEffect(() => {
+		if (selectedThemeMode === "system") {
+			document.documentElement.removeAttribute("data-color-scheme");
+		} else {
+			document.documentElement.setAttribute(
+				"data-color-scheme",
+				selectedThemeMode
+			);
+		}
+	}, [selectedThemeMode]);
 
-  // Save theme mode when it changes
-  useEffect(() => {
-    storageService.saveSettings({ themeMode: selectedThemeMode });
-  }, [selectedThemeMode]);
+	// Handle font changes
+	const handleQuoteFontChange = (font: string) => {
+		setSelectedQuoteFont(font);
+	};
 
-  // Cycle theme mode
-  const handleThemeModeChange = () => {
-    setSelectedThemeMode((prev) =>
-      prev === 'system' ? 'light' : prev === 'light' ? 'dark' : 'system'
-    );
-  };
+	const handleUIFontChange = (font: string) => {
+		setSelectedUIFont(font);
+	};
 
-  // Apply theme mode override
-  useEffect(() => {
-    if (selectedThemeMode === 'system') {
-      document.documentElement.removeAttribute('data-color-scheme');
-    } else {
-      document.documentElement.setAttribute('data-color-scheme', selectedThemeMode);
-    }
-  }, [selectedThemeMode]);
+	// Handle light theme change
+	const handleLightThemeChange = (theme: string) => {
+		setSelectedLightTheme(theme);
+		// Apply immediately if currently in light mode
+		if (
+			selectedThemeMode === "light" ||
+			(selectedThemeMode === "system" &&
+				!window.matchMedia("(prefers-color-scheme: dark)").matches)
+		) {
+			document.documentElement.setAttribute("data-theme", theme);
+		}
+		// Save to storage
+		storageService.saveSettings({ selectedLightTheme: theme });
+	};
 
+	// Handle dark theme change
+	const handleDarkThemeChange = (theme: string) => {
+		setSelectedDarkTheme(theme);
+		// Apply immediately if currently in dark mode
+		if (
+			selectedThemeMode === "dark" ||
+			(selectedThemeMode === "system" &&
+				window.matchMedia("(prefers-color-scheme: dark)").matches)
+		) {
+			document.documentElement.setAttribute("data-theme", theme);
+		}
+		// Save to storage
+		storageService.saveSettings({ selectedDarkTheme: theme });
+	};
 
+	// Handle semantic color theme change
+	const handleSemanticThemeChange = (theme: string) => {
+		setSelectedSemanticTheme(theme);
+		// Save to storage
+		storageService.saveSettings({ selectedSemanticTheme: theme });
+	};
 
-  // Handle font changes
-  const handleQuoteFontChange = (font: string) => {
-    setSelectedQuoteFont(font);
-  };
+	// Apply appropriate DaisyUI theme based on mode
+	useEffect(() => {
+		const applyTheme = () => {
+			const isDarkMode =
+				selectedThemeMode === "dark" ||
+				(selectedThemeMode === "system" &&
+					window.matchMedia("(prefers-color-scheme: dark)").matches);
+			const themeToApply = isDarkMode
+				? selectedDarkTheme
+				: selectedLightTheme;
+			document.documentElement.setAttribute("data-theme", themeToApply);
+		};
 
-  const handleUIFontChange = (font: string) => {
-    setSelectedUIFont(font);
-  };
+		applyTheme();
 
-  // Handle light theme change
-  const handleLightThemeChange = (theme: string) => {
-    setSelectedLightTheme(theme);
-    // Apply immediately if currently in light mode
-    if (selectedThemeMode === 'light' || 
-        (selectedThemeMode === 'system' && !window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      document.documentElement.setAttribute('data-theme', theme);
-    }
-    // Save to storage
-    storageService.saveSettings({ selectedLightTheme: theme });
-  };
+		// Listen for system preference changes when in system mode
+		if (selectedThemeMode === "system") {
+			const mediaQuery = window.matchMedia(
+				"(prefers-color-scheme: dark)"
+			);
+			mediaQuery.addEventListener("change", applyTheme);
+			return () => mediaQuery.removeEventListener("change", applyTheme);
+		}
+	}, [selectedThemeMode, selectedLightTheme, selectedDarkTheme]);
 
-  // Handle dark theme change
-  const handleDarkThemeChange = (theme: string) => {
-    setSelectedDarkTheme(theme);
-    // Apply immediately if currently in dark mode
-    if (selectedThemeMode === 'dark' || 
-        (selectedThemeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      document.documentElement.setAttribute('data-theme', theme);
-    }
-    // Save to storage
-    storageService.saveSettings({ selectedDarkTheme: theme });
-  };
+	// Load saved themes
+	useEffect(() => {
+		const loadThemes = async () => {
+			const saved = await storageService.getSettings();
+			if (saved) {
+				if (saved.selectedLightTheme) {
+					setSelectedLightTheme(saved.selectedLightTheme);
+				}
+				if (saved.selectedDarkTheme) {
+					setSelectedDarkTheme(saved.selectedDarkTheme);
+				}
+			}
+		};
+		loadThemes();
+	}, []);
 
-  // Handle semantic color theme change
-  const handleSemanticThemeChange = (theme: string) => {
-    setSelectedSemanticTheme(theme);
-    // Save to storage
-    storageService.saveSettings({ selectedSemanticTheme: theme });
-  };
+	// Load saved semantic theme
+	useEffect(() => {
+		const loadSemanticTheme = async () => {
+			const saved = await storageService.getSettings();
+			if (saved && saved.selectedSemanticTheme) {
+				setSelectedSemanticTheme(saved.selectedSemanticTheme);
+			}
+		};
+		loadSemanticTheme();
+	}, []);
 
-  // Apply appropriate DaisyUI theme based on mode
-  useEffect(() => {
-    const applyTheme = () => {
-      const isDarkMode = selectedThemeMode === 'dark' || 
-        (selectedThemeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-      const themeToApply = isDarkMode ? selectedDarkTheme : selectedLightTheme;
-      document.documentElement.setAttribute('data-theme', themeToApply);
-    };
+	const refreshQuote = async () => {
+		// Try to use prefetched quote first for instant refresh
+		const prefetchedQuote = await storageService.consumePrefetchedQuote();
 
-    applyTheme();
+		if (prefetchedQuote) {
+			// Use prefetched quote immediately - no loading state needed
+			setQuote(prefetchedQuote);
+			// Prefetch the next quote in the background
+			quoteService.prefetchNextQuote();
+		} else {
+			// Fallback to fetching new quote with loading state
+			setLoading(true);
 
-    // Listen for system preference changes when in system mode
-    if (selectedThemeMode === 'system') {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      mediaQuery.addEventListener('change', applyTheme);
-      return () => mediaQuery.removeEventListener('change', applyTheme);
-    }
-  }, [selectedThemeMode, selectedLightTheme, selectedDarkTheme]);
+			const newQuote = await quoteService.getRandomQuote();
 
-  // Load saved themes
-  useEffect(() => {
-    const loadThemes = async () => {
-      const saved = await storageService.getSettings();
-      if (saved) {
-        if (saved.selectedLightTheme) {
-          setSelectedLightTheme(saved.selectedLightTheme);
-        }
-        if (saved.selectedDarkTheme) {
-          setSelectedDarkTheme(saved.selectedDarkTheme);
-        }
-      }
-    };
-    loadThemes();
-  }, []);
+			// Cache the new quote
+			await storageService.cacheQuote({
+				text: newQuote.text,
+				author: newQuote.author,
+				source: newQuote.source || "Unknown",
+			});
 
-  // Load saved semantic theme
-  useEffect(() => {
-    const loadSemanticTheme = async () => {
-      const saved = await storageService.getSettings();
-      if (saved && saved.selectedSemanticTheme) {
-        setSelectedSemanticTheme(saved.selectedSemanticTheme);
-      }
-    };
-    loadSemanticTheme();
-  }, []);
+			setQuote(newQuote);
+			setLoading(false);
 
-  const refreshQuote = async () => {
-    // Try to use prefetched quote first for instant refresh
-    const prefetchedQuote = await storageService.consumePrefetchedQuote()
-    
-    if (prefetchedQuote) {
-      // Use prefetched quote immediately - no loading state needed
-      setQuote(prefetchedQuote)
-      // Prefetch the next quote in the background
-      quoteService.prefetchNextQuote()
-    } else {
-      // Fallback to fetching new quote with loading state
-      setLoading(true)
-      
-      const newQuote = await quoteService.getRandomQuote()
-      
-      // Cache the new quote
-      await storageService.cacheQuote({
-        text: newQuote.text,
-        author: newQuote.author,
-        source: newQuote.source || 'Unknown'
-      })
-      
-      setQuote(newQuote)
-      setLoading(false)
-      
-      // Prefetch the next quote in the background
-      quoteService.prefetchNextQuote()
-    }
-  }
+			// Prefetch the next quote in the background
+			quoteService.prefetchNextQuote();
+		}
+	};
 
-  // Explicitly use storage to ensure Chrome Web Store detects it
-  const testStorageUsage = async () => {
-    await storageService.getSettings()
-  }
+	// Explicitly use storage to ensure Chrome Web Store detects it
+	const testStorageUsage = async () => {
+		await storageService.getSettings();
+	};
 
-  // Helper to determine if dark mode is active
-  const isDark = (selectedThemeMode === 'dark') ||
-    (selectedThemeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+	// Helper to determine if dark mode is active
+	const isDark =
+		selectedThemeMode === "dark" ||
+		(selectedThemeMode === "system" &&
+			window.matchMedia("(prefers-color-scheme: dark)").matches);
 
-  // Get current background lightness based on theme mode
-  const currentBackgroundLightness = isDark ? backgroundLightnessDark : backgroundLightnessLight;
-  
-  // Handler for background lightness changes
-  const handleBackgroundLightnessChange = (value: number) => {
-    if (isDark) {
-      setBackgroundLightnessDark(value);
-    } else {
-      setBackgroundLightnessLight(value);
-    }
-  };
+	// Get current background lightness based on theme mode
+	const currentBackgroundLightness = isDark
+		? backgroundLightnessDark
+		: backgroundLightnessLight;
 
-  // Handler for font size changes
-  const handleFontSizeChange = (value: number) => {
-    setFontSize(value);
-  };
+	// Handler for background lightness changes
+	const handleBackgroundLightnessChange = (value: number) => {
+		if (isDark) {
+			setBackgroundLightnessDark(value);
+		} else {
+			setBackgroundLightnessLight(value);
+		}
+	};
 
-  // Apply font size to CSS variables
-  useEffect(() => {
-    const fontStep = fontSizeSteps[fontSize];
-    if (fontStep) {
-      // Set CSS custom properties for responsive font sizes
-      document.documentElement.style.setProperty('--quote-font-size-base', fontStep.regular.base);
-      document.documentElement.style.setProperty('--quote-font-size-md', fontStep.regular.md);
-      document.documentElement.style.setProperty('--quote-font-size-lg', fontStep.regular.lg);
-      document.documentElement.style.setProperty('--quote-font-size-mono-base', fontStep.monospace.base);
-      document.documentElement.style.setProperty('--quote-font-size-mono-md', fontStep.monospace.md);
-      document.documentElement.style.setProperty('--quote-font-size-mono-lg', fontStep.monospace.lg);
-    }
-  }, [fontSize]);
+	// Handler for font size changes
+	const handleFontSizeChange = (value: number) => {
+		setFontSize(value);
+	};
 
-  // Apply background lightness using CSS overlay
-  useEffect(() => {
-    // Calculate overlay opacity and color
-    if (currentBackgroundLightness === 50) {
-      // Remove overlay at neutral position
-      document.documentElement.style.removeProperty('--bg-overlay-color');
-      document.documentElement.style.removeProperty('--bg-overlay-opacity');
-    } else if (currentBackgroundLightness > 50) {
-      // Lighter: white overlay
-      const opacity = (currentBackgroundLightness - 50) / 50 * 0.8; // Max 80% opacity
-      document.documentElement.style.setProperty('--bg-overlay-color', '255, 255, 255');
-      document.documentElement.style.setProperty('--bg-overlay-opacity', opacity.toString());
-    } else {
-      // Darker: black overlay
-      const opacity = (50 - currentBackgroundLightness) / 50 * 0.8; // Max 80% opacity
-      document.documentElement.style.setProperty('--bg-overlay-color', '0, 0, 0');
-      document.documentElement.style.setProperty('--bg-overlay-opacity', opacity.toString());
-    }
-  }, [currentBackgroundLightness]);
+	// Apply font size to CSS variables
+	useEffect(() => {
+		const fontStep = fontSizeSteps[fontSize];
+		if (fontStep) {
+			// Set CSS custom properties for responsive font sizes
+			document.documentElement.style.setProperty(
+				"--quote-font-size-base",
+				fontStep.regular.base
+			);
+			document.documentElement.style.setProperty(
+				"--quote-font-size-md",
+				fontStep.regular.md
+			);
+			document.documentElement.style.setProperty(
+				"--quote-font-size-lg",
+				fontStep.regular.lg
+			);
+			document.documentElement.style.setProperty(
+				"--quote-font-size-mono-base",
+				fontStep.monospace.base
+			);
+			document.documentElement.style.setProperty(
+				"--quote-font-size-mono-md",
+				fontStep.monospace.md
+			);
+			document.documentElement.style.setProperty(
+				"--quote-font-size-mono-lg",
+				fontStep.monospace.lg
+			);
+		}
+	}, [fontSize]);
 
-  // Handle escape key to close settings panel
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && showSettings) {
-        setShowSettings(false)
-      }
-    }
+	// Apply background lightness using CSS overlay
+	useEffect(() => {
+		// Calculate overlay opacity and color
+		if (currentBackgroundLightness === 50) {
+			// Remove overlay at neutral position
+			document.documentElement.style.removeProperty("--bg-overlay-color");
+			document.documentElement.style.removeProperty(
+				"--bg-overlay-opacity"
+			);
+		} else if (currentBackgroundLightness > 50) {
+			// Lighter: white overlay
+			const opacity = ((currentBackgroundLightness - 50) / 50) * 0.8; // Max 80% opacity
+			document.documentElement.style.setProperty(
+				"--bg-overlay-color",
+				"255, 255, 255"
+			);
+			document.documentElement.style.setProperty(
+				"--bg-overlay-opacity",
+				opacity.toString()
+			);
+		} else {
+			// Darker: black overlay
+			const opacity = ((50 - currentBackgroundLightness) / 50) * 0.8; // Max 80% opacity
+			document.documentElement.style.setProperty(
+				"--bg-overlay-color",
+				"0, 0, 0"
+			);
+			document.documentElement.style.setProperty(
+				"--bg-overlay-opacity",
+				opacity.toString()
+			);
+		}
+	}, [currentBackgroundLightness]);
 
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [showSettings])
+	// Handle escape key to close settings panel
+	useEffect(() => {
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.key === "Escape" && showSettings) {
+				setShowSettings(false);
+			}
+		};
 
-  // Open panel: show overlay and panel immediately
-  useEffect(() => {
-    if (showSettings) {
-      setSettingsPanelVisible(true)
-      if (closeTimeoutRef.current) {
-        clearTimeout(closeTimeoutRef.current)
-        closeTimeoutRef.current = null
-      }
-    } else if (settingsPanelVisible) {
-      // Wait for slide-out animation before unmounting
-      closeTimeoutRef.current = setTimeout(() => {
-        setSettingsPanelVisible(false)
-      }, 300)
-    }
-    return () => {
-      if (closeTimeoutRef.current) {
-        clearTimeout(closeTimeoutRef.current)
-        closeTimeoutRef.current = null
-      }
-    }
-  }, [showSettings])
+		document.addEventListener("keydown", handleKeyDown);
+		return () => document.removeEventListener("keydown", handleKeyDown);
+	}, [showSettings]);
 
-  // Fetch quote on mount - use cached quote if available and fresh
-  useEffect(() => {
-    const fetchQuote = async () => {
-      setLoading(true)
-      
-      // Ensure storage is used (for Chrome Web Store detection)
-      await testStorageUsage()
-      
-      // Always try to get cached quote first
-      const cachedQuote = await storageService.getCachedQuote()
-      
-      if (cachedQuote) {
-        setQuote(cachedQuote)
-        setLoading(false)
-        
-        // Check if we need to prefetch the next quote
-        const prefetchedQuote = await storageService.getPrefetchedQuote()
-        if (!prefetchedQuote) {
-          // Prefetch in background if none exists
-          quoteService.prefetchNextQuote()
-        }
-        return
-      }
-      
-      // If no cached quote, fetch new one and cache it
-      const newQuote = await quoteService.getTodaysQuote()
-      
-      // Cache the new quote
-      await storageService.cacheQuote({
-        text: newQuote.text,
-        author: newQuote.author,
-        source: newQuote.source || 'Unknown'
-      })
-      
-      setQuote(newQuote)
-      setLoading(false)
-      
-      // Prefetch the next quote in the background
-      quoteService.prefetchNextQuote()
-    }
+	// Open panel: show overlay and panel immediately
+	useEffect(() => {
+		if (showSettings) {
+			setSettingsPanelVisible(true);
+			if (closeTimeoutRef.current) {
+				clearTimeout(closeTimeoutRef.current);
+				closeTimeoutRef.current = null;
+			}
+		} else if (settingsPanelVisible) {
+			// Wait for slide-out animation before unmounting
+			closeTimeoutRef.current = setTimeout(() => {
+				setSettingsPanelVisible(false);
+			}, 300);
+		}
+		return () => {
+			if (closeTimeoutRef.current) {
+				clearTimeout(closeTimeoutRef.current);
+				closeTimeoutRef.current = null;
+			}
+		};
+	}, [showSettings]);
 
-    fetchQuote()
-  }, [])
+	// Fetch quote on mount - use cached quote if available and fresh
+	useEffect(() => {
+		const fetchQuote = async () => {
+			setLoading(true);
 
-  return (
-    <div 
-      className={
-        `min-h-screen w-full flex flex-col items-center justify-center bg-base-200 noise transition-colors duration-300 relative` +
-        (isDark ? ' text-base-content' : '')
-      }
-      style={{
-        position: 'relative'
-      }}
-    >
-      {/* Background lightness overlay */}
-      {currentBackgroundLightness !== 50 && (
-        <div 
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundColor: `rgba(var(--bg-overlay-color, 0, 0, 0), var(--bg-overlay-opacity, 0))`,
-            zIndex: 0
-          }}
-        />
-      )}
-      {/* Settings button in bottom left */}
-      <button 
-        className="btn btn-circle btn-ghost fixed bottom-6 left-6 z-50"
-        onClick={() => setShowSettings(!showSettings)}
-        title="Settings"
-        aria-label="Open settings"
-        aria-expanded={showSettings}
-        aria-controls="settings-panel"
-      >
-        <span className="text-2xl">···</span>
-      </button>
+			// Ensure storage is used (for Chrome Web Store detection)
+			await testStorageUsage();
 
-      {/* Refresh button in bottom right */}
-      <button 
-        className="btn btn-circle btn-ghost fixed bottom-6 right-6 z-50"
-        onClick={refreshQuote}
-        disabled={loading}
-        title="Refresh quote"
-        aria-label={loading ? "Loading new quote..." : "Refresh quote"}
-        aria-live="polite"
-      >
-        <span className="text-xl">↻</span>
-      </button>
+			// Always try to get cached quote first
+			const cachedQuote = await storageService.getCachedQuote();
 
-      {/* Main content */}
-      <main className="flex flex-1 flex-col items-center justify-center w-full px-4 relative z-10">
-        {isPlainQuote ? (
-          <PlainQuote 
-            quote={quote}
-            loading={loading}
-            selectedSemanticTheme={selectedSemanticTheme}
-            selectedQuoteFont={selectedQuoteFont}
-          />
-        ) : (
-          <SwipeQuote 
-            quote={quote}
-            loading={loading}
-            onRefresh={refreshQuote}
-            selectedSemanticTheme={selectedSemanticTheme}
-            selectedQuoteFont={selectedQuoteFont}
-          />
-        )}
-      </main>
+			if (cachedQuote) {
+				setQuote(cachedQuote);
+				setLoading(false);
 
-      {/* Settings panel with overlay */}
-      {settingsPanelVisible && (
-        <div
-          className="fixed inset-0 z-[1001] bg-transparent flex"
-          onClick={e => {
-            if (e.target === e.currentTarget) setShowSettings(false);
-          }}
-          aria-label="Settings overlay"
-        >
-          <SettingsPanel
-            isOpen={showSettings}
-            onClose={() => setShowSettings(false)}
-            id="settings-panel"
-            selectedThemeMode={selectedThemeMode}
-            onThemeModeChange={handleThemeModeChange}
-            selectedQuoteFont={selectedQuoteFont}
-            onQuoteFontChange={handleQuoteFontChange}
-            selectedUIFont={selectedUIFont}
-            onUIFontChange={handleUIFontChange}
-            selectedLightTheme={selectedLightTheme}
-            selectedDarkTheme={selectedDarkTheme}
-            onLightThemeChange={handleLightThemeChange}
-            onDarkThemeChange={handleDarkThemeChange}
-            selectedSemanticTheme={selectedSemanticTheme}
-            onSemanticThemeChange={handleSemanticThemeChange}
-            backgroundLightness={currentBackgroundLightness}
-            onBackgroundLightnessChange={handleBackgroundLightnessChange}
-            lightnessMin={0}
-            lightnessMax={100}
-            fontSize={fontSize}
-            onFontSizeChange={handleFontSizeChange}
-            fontSizeSteps={fontSizeSteps}
-          />
-        </div>
-      )}
-    </div>
-  )
+				// Check if we need to prefetch the next quote
+				const prefetchedQuote =
+					await storageService.getPrefetchedQuote();
+				if (!prefetchedQuote) {
+					// Prefetch in background if none exists
+					quoteService.prefetchNextQuote();
+				}
+				return;
+			}
+
+			// If no cached quote, fetch new one and cache it
+			const newQuote = await quoteService.getTodaysQuote();
+
+			// Cache the new quote
+			await storageService.cacheQuote({
+				text: newQuote.text,
+				author: newQuote.author,
+				source: newQuote.source || "Unknown",
+			});
+
+			setQuote(newQuote);
+			setLoading(false);
+
+			// Prefetch the next quote in the background
+			quoteService.prefetchNextQuote();
+		};
+
+		fetchQuote();
+	}, []);
+
+	return (
+		<div
+			className={
+				`min-h-screen w-full flex flex-col items-center justify-center bg-base-200 noise transition-colors duration-300 relative` +
+				(isDark ? " text-base-content" : "")
+			}
+			style={{
+				position: "relative",
+			}}
+		>
+			{/* Background lightness overlay */}
+			{currentBackgroundLightness !== 50 && (
+				<div
+					className="absolute inset-0 pointer-events-none"
+					style={{
+						backgroundColor: `rgba(var(--bg-overlay-color, 0, 0, 0), var(--bg-overlay-opacity, 0))`,
+						zIndex: 0,
+					}}
+				/>
+			)}
+			{/* Settings button in bottom left */}
+			<button
+				className="btn btn-circle btn-ghost fixed bottom-6 left-6 z-50"
+				onClick={() => setShowSettings(!showSettings)}
+				title="Settings"
+				aria-label="Open settings"
+				aria-expanded={showSettings}
+				aria-controls="settings-panel"
+			>
+				<span className="text-2xl">···</span>
+			</button>
+
+			{/* Refresh button in bottom right */}
+			<button
+				className="btn btn-circle btn-ghost fixed bottom-6 right-6 z-50"
+				onClick={refreshQuote}
+				disabled={loading}
+				title="Refresh quote"
+				aria-label={loading ? "Loading new quote..." : "Refresh quote"}
+				aria-live="polite"
+			>
+				<span className="text-xl">↻</span>
+			</button>
+
+			{/* Main content */}
+			<main className="flex flex-1 flex-col items-center justify-center w-full px-4 relative z-10">
+				{isPlainQuote ? (
+					<PlainQuote
+						quote={quote}
+						loading={loading}
+						selectedSemanticTheme={selectedSemanticTheme}
+						selectedQuoteFont={selectedQuoteFont}
+					/>
+				) : (
+					<SwipeQuote
+						quote={quote}
+						loading={loading}
+						onRefresh={refreshQuote}
+						selectedSemanticTheme={selectedSemanticTheme}
+						selectedQuoteFont={selectedQuoteFont}
+					/>
+				)}
+			</main>
+
+			{/* Settings panel with overlay */}
+			{settingsPanelVisible && (
+				<div
+					className="fixed inset-0 z-[1001] bg-transparent flex"
+					onClick={(e) => {
+						if (e.target === e.currentTarget)
+							setShowSettings(false);
+					}}
+					aria-label="Settings overlay"
+				>
+					<SettingsPanel
+						isOpen={showSettings}
+						onClose={() => setShowSettings(false)}
+						id="settings-panel"
+						selectedThemeMode={selectedThemeMode}
+						onThemeModeChange={handleThemeModeChange}
+						selectedQuoteFont={selectedQuoteFont}
+						onQuoteFontChange={handleQuoteFontChange}
+						selectedUIFont={selectedUIFont}
+						onUIFontChange={handleUIFontChange}
+						selectedLightTheme={selectedLightTheme}
+						selectedDarkTheme={selectedDarkTheme}
+						onLightThemeChange={handleLightThemeChange}
+						onDarkThemeChange={handleDarkThemeChange}
+						selectedSemanticTheme={selectedSemanticTheme}
+						onSemanticThemeChange={handleSemanticThemeChange}
+						backgroundLightness={currentBackgroundLightness}
+						onBackgroundLightnessChange={
+							handleBackgroundLightnessChange
+						}
+						lightnessMin={0}
+						lightnessMax={100}
+						fontSize={fontSize}
+						onFontSizeChange={handleFontSizeChange}
+						fontSizeSteps={fontSizeSteps}
+					/>
+				</div>
+			)}
+		</div>
+	);
 }
 
 // Development wrapper component
 const DevWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 	return (
-		<div style={{
-			width: '100vw',
-			height: '100vh',
-			background: 'linear-gradient(135deg, #fdfdf8 0%, #f5f5f0 100%)',
-			position: 'relative',
-			overflow: 'hidden'
-		}}>
+		<div
+			style={{
+				width: "100vw",
+				height: "100vh",
+				background: "linear-gradient(135deg, #fdfdf8 0%, #f5f5f0 100%)",
+				position: "relative",
+				overflow: "hidden",
+			}}
+		>
 			{/* Development indicator */}
-			<div style={{
-				position: 'fixed',
-				top: '10px',
-				right: '10px',
-				background: 'rgba(255, 0, 0, 0.8)',
-				color: 'white',
-				padding: '4px 8px',
-				borderRadius: '4px',
-				fontSize: '12px',
-				fontFamily: 'monospace',
-				zIndex: 9999
-			}}>
+			<div
+				style={{
+					position: "fixed",
+					top: "10px",
+					right: "10px",
+					background: "rgba(255, 0, 0, 0.8)",
+					color: "white",
+					padding: "4px 8px",
+					borderRadius: "4px",
+					fontSize: "12px",
+					fontFamily: "monospace",
+					zIndex: 9999,
+				}}
+			>
 				DEV MODE
 			</div>
 			{children}
 		</div>
-	)
-}
+	);
+};
 
 // Main render logic
-const rootElement = document.getElementById('newtab-root')
+const rootElement = document.getElementById("newtab-root");
 if (rootElement) {
-	const root = ReactDOM.createRoot(rootElement)
-	
+	const root = ReactDOM.createRoot(rootElement);
+
 	if (isDev) {
 		// Development mode - wrap in dev container
 		root.render(
 			<DevWrapper>
 				<NewTabApp />
 			</DevWrapper>
-		)
+		);
 	} else {
 		// Extension mode - render directly
-		root.render(<NewTabApp />)
+		root.render(<NewTabApp />);
 	}
 }
