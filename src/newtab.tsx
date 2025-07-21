@@ -70,6 +70,11 @@ function NewTabApp() {
 		defaultFonts.quote
 	);
 	const [selectedUIFont, setSelectedUIFont] = useState(defaultFonts.ui);
+	// Theme-specific font preferences
+	const [selectedLightFont, setSelectedLightFont] = useState("elegant"); // Playfair Display
+	const [selectedDarkFont, setSelectedDarkFont] = useState("monospace"); // Ubuntu Mono
+	// Font behavior preference
+	const [fontFollowsTheme, setFontFollowsTheme] = useState(true);
 	const [selectedLightTheme, setSelectedLightTheme] = useState("light");
 	const [selectedDarkTheme, setSelectedDarkTheme] = useState("dark");
 	const [selectedSemanticTheme, setSelectedSemanticTheme] =
@@ -89,6 +94,17 @@ function NewTabApp() {
 					}
 					if (saved.selectedUIFont) {
 						setSelectedUIFont(saved.selectedUIFont);
+					}
+					// Load theme-specific font preferences
+					if (saved.selectedLightFont) {
+						setSelectedLightFont(saved.selectedLightFont);
+					}
+					if (saved.selectedDarkFont) {
+						setSelectedDarkFont(saved.selectedDarkFont);
+					}
+					// Load font behavior preference
+					if (saved.fontFollowsTheme !== undefined) {
+						setFontFollowsTheme(saved.fontFollowsTheme);
 					}
 					if (saved.backgroundLightnessLight !== undefined) {
 						setBackgroundLightnessLight(
@@ -125,6 +141,20 @@ function NewTabApp() {
 		storageService.saveSelectedUIFont(selectedUIFont);
 	}, [selectedUIFont]);
 
+	// Save theme-specific font preferences when they change
+	useEffect(() => {
+		storageService.saveSettings({ selectedLightFont });
+	}, [selectedLightFont]);
+
+	useEffect(() => {
+		storageService.saveSettings({ selectedDarkFont });
+	}, [selectedDarkFont]);
+
+	// Save font behavior preference when it changes
+	useEffect(() => {
+		storageService.saveSettings({ fontFollowsTheme });
+	}, [fontFollowsTheme]);
+
 	// Save background lightness when it changes
 	useEffect(() => {
 		storageService.saveSettings({ backgroundLightnessLight });
@@ -139,10 +169,21 @@ function NewTabApp() {
 		storageService.saveSettings({ fontSize });
 	}, [fontSize]);
 
-	// Apply fonts to CSS variables
+	// Helper to determine if dark mode is active
+	const isDark =
+		selectedThemeMode === "dark" ||
+		(selectedThemeMode === "system" &&
+			window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+	// Apply fonts to CSS variables - handle both automatic and single font modes
 	useEffect(() => {
+		// Determine which font to use based on fontFollowsTheme preference
+		const currentQuoteFont = fontFollowsTheme 
+			? (isDark ? selectedDarkFont : selectedLightFont)
+			: selectedQuoteFont;
+		
 		const quoteFont =
-			quoteFonts[selectedQuoteFont as keyof typeof quoteFonts];
+			quoteFonts[currentQuoteFont as keyof typeof quoteFonts];
 		const uiFont = uiFonts[selectedUIFont as keyof typeof uiFonts];
 
 		if (quoteFont) {
@@ -157,7 +198,7 @@ function NewTabApp() {
 				uiFont.family
 			);
 		}
-	}, [selectedQuoteFont, selectedUIFont]);
+	}, [selectedLightFont, selectedDarkFont, selectedQuoteFont, selectedUIFont, isDark, fontFollowsTheme]);
 
 	// Load saved theme mode on mount
 	useEffect(() => {
@@ -201,6 +242,20 @@ function NewTabApp() {
 
 	const handleUIFontChange = (font: string) => {
 		setSelectedUIFont(font);
+	};
+
+	// Handle theme-specific font changes
+	const handleLightFontChange = (font: string) => {
+		setSelectedLightFont(font);
+	};
+
+	const handleDarkFontChange = (font: string) => {
+		setSelectedDarkFont(font);
+	};
+
+	// Handle font follows theme toggle
+	const handleFontFollowsThemeChange = (follows: boolean) => {
+		setFontFollowsTheme(follows);
 	};
 
 	// Handle light theme change
@@ -326,12 +381,6 @@ function NewTabApp() {
 	const testStorageUsage = async () => {
 		await storageService.getSettings();
 	};
-
-	// Helper to determine if dark mode is active
-	const isDark =
-		selectedThemeMode === "dark" ||
-		(selectedThemeMode === "system" &&
-			window.matchMedia("(prefers-color-scheme: dark)").matches);
 
 	// Get current background lightness based on theme mode
 	const currentBackgroundLightness = isDark
@@ -548,7 +597,9 @@ function NewTabApp() {
 						quote={quote}
 						loading={loading}
 						selectedSemanticTheme={selectedSemanticTheme}
-						selectedQuoteFont={selectedQuoteFont}
+						selectedQuoteFont={fontFollowsTheme 
+							? (isDark ? selectedDarkFont : selectedLightFont)
+							: selectedQuoteFont}
 					/>
 				) : (
 					<SwipeQuote
@@ -556,7 +607,9 @@ function NewTabApp() {
 						loading={loading}
 						onRefresh={refreshQuote}
 						selectedSemanticTheme={selectedSemanticTheme}
-						selectedQuoteFont={selectedQuoteFont}
+						selectedQuoteFont={fontFollowsTheme 
+							? (isDark ? selectedDarkFont : selectedLightFont)
+							: selectedQuoteFont}
 					/>
 				)}
 			</main>
@@ -596,6 +649,12 @@ function NewTabApp() {
 						fontSize={fontSize}
 						onFontSizeChange={handleFontSizeChange}
 						fontSizeSteps={fontSizeSteps}
+						selectedLightFont={selectedLightFont}
+						onLightFontChange={handleLightFontChange}
+						selectedDarkFont={selectedDarkFont}
+						onDarkFontChange={handleDarkFontChange}
+						fontFollowsTheme={fontFollowsTheme}
+						onFontFollowsThemeChange={handleFontFollowsThemeChange}
 					/>
 				</div>
 			)}

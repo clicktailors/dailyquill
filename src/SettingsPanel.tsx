@@ -22,6 +22,14 @@ interface SettingsPanelProps {
 	onQuoteFontChange: (font: string) => void;
 	selectedUIFont: string;
 	onUIFontChange: (font: string) => void;
+	// Theme-specific font preferences
+	selectedLightFont: string;
+	onLightFontChange: (font: string) => void;
+	selectedDarkFont: string;
+	onDarkFontChange: (font: string) => void;
+	// Font behavior preference
+	fontFollowsTheme: boolean;
+	onFontFollowsThemeChange: (follows: boolean) => void;
 	selectedLightTheme: string;
 	selectedDarkTheme: string;
 	onLightThemeChange: (theme: string) => void;
@@ -51,6 +59,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 	onQuoteFontChange,
 	selectedUIFont,
 	onUIFontChange,
+	selectedLightFont,
+	onLightFontChange,
+	selectedDarkFont,
+	onDarkFontChange,
+	fontFollowsTheme,
+	onFontFollowsThemeChange,
 	selectedLightTheme,
 	selectedDarkTheme,
 	onLightThemeChange,
@@ -247,25 +261,65 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 						</div>
 						<div className={styles.divider} />
 						<div className={styles.sectionContainer}>
-							<label className={styles.sectionTitle}>Fonts</label>
+							<div className="flex items-center justify-between mb-4">
+								<label className={styles.sectionTitle}>
+									{fontFollowsTheme ? (() => {
+										const isDarkMode =
+											selectedThemeMode === "dark" ||
+											(selectedThemeMode === "system" &&
+												window.matchMedia(
+													"(prefers-color-scheme: dark)"
+												).matches);
+										return isDarkMode ? "Dark Mode Font" : "Light Mode Font";
+									})() : "Font"}
+								</label>
+								<div className="flex items-center gap-2">
+									<span className="text-sm opacity-70">
+										{fontFollowsTheme ? "Auto" : "Fixed"}
+									</span>
+									<input
+										type="checkbox"
+										className="toggle toggle-primary toggle-sm"
+										checked={fontFollowsTheme}
+										onChange={(e) => onFontFollowsThemeChange(e.target.checked)}
+										aria-label="Font follows theme"
+									/>
+								</div>
+							</div>
 							<div className={styles.buttonContainer}>
 								{Object.entries(quoteFonts).map(
-									([key, font]) => (
-										<button
-											key={key}
-											className={
-												selectedQuoteFont === key
-													? styles.selectedButton
-													: styles.unselectedButton
-											}
-											onClick={() =>
-												onQuoteFontChange(key)
-											}
-											style={{ fontFamily: font.family }}
-										>
-											{font.name}
-										</button>
-									)
+									([key, font]) => {
+										// Determine current state based on mode
+										const isDarkMode =
+											selectedThemeMode === "dark" ||
+											(selectedThemeMode === "system" &&
+												window.matchMedia(
+													"(prefers-color-scheme: dark)"
+												).matches);
+										
+										const isSelected = fontFollowsTheme
+											? (isDarkMode ? selectedDarkFont === key : selectedLightFont === key)
+											: selectedQuoteFont === key;
+										
+										const handleFontClick = fontFollowsTheme
+											? (isDarkMode ? onDarkFontChange : onLightFontChange)
+											: onQuoteFontChange;
+										
+										return (
+											<button
+												key={key}
+												className={
+													isSelected
+														? styles.selectedButton
+														: styles.unselectedButton
+												}
+												onClick={() => handleFontClick(key)}
+												style={{ fontFamily: font.family }}
+											>
+												{font.name}
+											</button>
+										);
+									}
 								)}
 							</div>
 							<div className="mt-4">

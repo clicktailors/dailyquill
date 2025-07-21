@@ -8,6 +8,11 @@ export interface ExtensionSettings {
 	themeMode?: 'system' | 'light' | 'dark'
 	selectedQuoteFont?: string
 	selectedUIFont?: string
+	// Theme-specific font preferences
+	selectedLightFont?: string
+	selectedDarkFont?: string
+	// Font behavior preference
+	fontFollowsTheme?: boolean
 	selectedDaisyTheme?: string
 	selectedLightTheme?: string
 	selectedDarkTheme?: string
@@ -57,7 +62,11 @@ class StorageService {
 		favoriteQuotes: [],
 		lastFetchTime: 0,
 		selectedTheme: 'default',
-		themeMode: 'system'
+		themeMode: 'system',
+		selectedLightFont: 'elegant', // Playfair Display for light mode
+		selectedDarkFont: 'monospace', // Ubuntu Mono for dark mode
+		fontFollowsTheme: true, // Default to automatic font switching
+		selectedQuoteFont: 'elegant' // Fallback for single font mode
 	}
 
 	async getSettings(): Promise<ExtensionSettings> {
