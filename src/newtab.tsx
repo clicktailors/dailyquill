@@ -79,6 +79,42 @@ function NewTabApp() {
 	const [selectedDarkTheme, setSelectedDarkTheme] = useState("dark");
 	const [selectedSemanticTheme, setSelectedSemanticTheme] =
 		useState("primary");
+	const [quoteVisible, setQuoteVisible] = useState(true);
+
+	// Listen for dqEnabled state from background
+	useEffect(() => {
+		let mounted = true;
+
+		if (
+			typeof chrome !== "undefined" &&
+			chrome.storage &&
+			chrome.storage.local
+		) {
+			chrome.storage.local.get(["dqEnabled"], (result) => {
+				if (!mounted) return;
+				setQuoteVisible(result.dqEnabled !== false); // default to true
+			});
+
+			const listener = (
+				changes: Record<string, chrome.storage.StorageChange>
+			) => {
+				if (!mounted) return;
+				if (changes.dqEnabled) {
+					setQuoteVisible(changes.dqEnabled.newValue !== false);
+				}
+			};
+
+			chrome.storage.onChanged.addListener(listener);
+			return () => {
+				mounted = false;
+				chrome.storage.onChanged.removeListener(listener);
+			};
+		}
+
+		return () => {
+			mounted = false;
+		};
+	}, []);
 
 	// Load saved settings on mount
 	useEffect(() => {
@@ -592,25 +628,31 @@ function NewTabApp() {
 
 			{/* Main content */}
 			<main className="flex flex-1 flex-col items-center justify-center w-full px-4 relative z-10">
-				{isPlainQuote ? (
-					<PlainQuote
-						quote={quote}
-						loading={loading}
-						selectedSemanticTheme={selectedSemanticTheme}
-						selectedQuoteFont={fontFollowsTheme 
-							? (isDark ? selectedDarkFont : selectedLightFont)
-							: selectedQuoteFont}
-					/>
+				{quoteVisible ? (
+					isPlainQuote ? (
+						<PlainQuote
+							quote={quote}
+							loading={loading}
+							selectedSemanticTheme={selectedSemanticTheme}
+							selectedQuoteFont={fontFollowsTheme 
+								? (isDark ? selectedDarkFont : selectedLightFont)
+								: selectedQuoteFont}
+						/>
+					) : (
+						<SwipeQuote
+							quote={quote}
+							loading={loading}
+							onRefresh={refreshQuote}
+							selectedSemanticTheme={selectedSemanticTheme}
+							selectedQuoteFont={fontFollowsTheme 
+								? (isDark ? selectedDarkFont : selectedLightFont)
+								: selectedQuoteFont}
+						/>
+					)
 				) : (
-					<SwipeQuote
-						quote={quote}
-						loading={loading}
-						onRefresh={refreshQuote}
-						selectedSemanticTheme={selectedSemanticTheme}
-						selectedQuoteFont={fontFollowsTheme 
-							? (isDark ? selectedDarkFont : selectedLightFont)
-							: selectedQuoteFont}
-					/>
+					<div className="text-center opacity-60 mt-20 text-lg">
+						Quote hidden. Click the Daily Quill icon in the toolbar to show it.
+					</div>
 				)}
 			</main>
 

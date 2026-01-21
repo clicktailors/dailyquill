@@ -36,42 +36,38 @@ async function createResizedIcon(sourcePath, targetPath, size) {
 
 // Main function
 async function generateIcons() {
-  const sourceIcon = 'icons/icon128.png'; // Updated path to icons folder
+  const iconVariants = [
+    { name: '', source: 'icons/icon128.png' },
+    { name: '_gray', source: 'icons/icon128_gray.png' }
+  ];
   const iconSizes = [16, 32, 48, 128];
-  
+
   // Create both directories if they don't exist
   const distIconsDir = 'dist/icons';
   const publicIconsDir = 'public/icons';
-  
+
   if (!fs.existsSync(distIconsDir)) {
     fs.mkdirSync(distIconsDir, { recursive: true });
   }
-  
+
   if (!fs.existsSync(publicIconsDir)) {
     fs.mkdirSync(publicIconsDir, { recursive: true });
   }
-  
-  // Check if source icon exists
-  if (!fs.existsSync(sourceIcon)) {
-    console.error(`❌ Source icon not found: ${sourceIcon}`);
-    console.log('\n📋 Instructions:');
-    console.log('1. Place your 128px PNG file in the icons/ folder as icon128.png');
-    console.log('2. Run: npm run resize-icons');
-    console.log('\n💡 Alternative: Use an online tool like https://www.iloveimg.com/resize-image');
-    return;
+
+  for (const variant of iconVariants) {
+    if (!fs.existsSync(variant.source)) {
+      console.warn(`⚠️  Source icon not found: ${variant.source} (skipping)`);
+      continue;
+    }
+    console.log(`🔄 Generating icons from ${variant.source}...`);
+    for (const size of iconSizes) {
+      const distTargetPath = path.join(distIconsDir, `icon${size}${variant.name}.png`);
+      const publicTargetPath = path.join(publicIconsDir, `icon${size}${variant.name}.png`);
+      await createResizedIcon(variant.source, distTargetPath, size);
+      await createResizedIcon(variant.source, publicTargetPath, size);
+    }
   }
-  
-  console.log(`🔄 Generating icons from ${sourceIcon}...`);
-  
-  // Generate all icon sizes for both directories
-  for (const size of iconSizes) {
-    const distTargetPath = path.join(distIconsDir, `icon${size}.png`);
-    const publicTargetPath = path.join(publicIconsDir, `icon${size}.png`);
-    
-    await createResizedIcon(sourceIcon, distTargetPath, size);
-    await createResizedIcon(sourceIcon, publicTargetPath, size);
-  }
-  
+
   console.log('\n🎉 Icon generation complete!');
   console.log('📁 Icons saved to: dist/icons/ and public/icons/');
   console.log('🔧 Run "npm run build:extension" to include them in your extension');

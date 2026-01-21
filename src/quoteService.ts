@@ -49,9 +49,19 @@ class QuoteService {
 		try {
 			if (isDev) console.log('Fetching from ZenQuotes...');
 			const response = await fetch('https://zenquotes.io/api/random')
+			if (!response.ok) {
+				throw new Error(`ZenQuotes request failed: ${response.status} ${response.statusText}`)
+			}
 			const data = await response.json()
 			
 			if (data && data.length > 0) {
+				// ZenQuotes sometimes returns an error message as a "quote" body.
+				// Example: 429 responses may still include JSON like:
+				// [{ q: "Too many requests...", a: "ZenQuotes.io" }]
+				const maybeText = String(data[0]?.q ?? '')
+				if (/too many requests/i.test(maybeText)) {
+					throw new Error('ZenQuotes rate limited (message body)')
+				}
 				const quote = {
 					text: data[0].q,
 					author: data[0].a,
@@ -73,6 +83,9 @@ class QuoteService {
 			// Note: QuoteGarden API might require different endpoint or API key
 			// This is a placeholder for future implementation
 			const response = await fetch('https://quote-garden.herokuapp.com/api/v3/quotes/random')
+			if (!response.ok) {
+				throw new Error(`QuoteGarden request failed: ${response.status} ${response.statusText}`)
+			}
 			const data = await response.json()
 			
 			if (data && data.statusCode === 200 && data.data) {
@@ -117,9 +130,16 @@ class QuoteService {
 			if (isDev) console.log('Getting today\'s quote...');
 			// Try to get today's quote from ZenQuotes
 			const response = await fetch('https://zenquotes.io/api/today')
+			if (!response.ok) {
+				throw new Error(`ZenQuotes today request failed: ${response.status} ${response.statusText}`)
+			}
 			const data = await response.json()
 			
 			if (data && data.length > 0) {
+				const maybeText = String(data[0]?.q ?? '')
+				if (/too many requests/i.test(maybeText)) {
+					throw new Error('ZenQuotes rate limited (message body)')
+				}
 				const quote = {
 					text: data[0].q,
 					author: data[0].a,

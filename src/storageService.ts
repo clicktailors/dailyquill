@@ -40,9 +40,14 @@ const isDev = import.meta.env.DEV || (typeof window !== 'undefined' && window.lo
 // Mock Chrome storage for development
 const mockChromeStorage = {
 	sync: {
-		get: async (key: string) => {
-			const stored = localStorage.getItem(`chrome.storage.sync.${key}`);
-			return stored ? JSON.parse(stored) : {};
+		get: async (key: string | string[]) => {
+			const keys = Array.isArray(key) ? key : [key];
+			const out: Record<string, any> = {};
+			for (const k of keys) {
+				const stored = localStorage.getItem(`chrome.storage.sync.${k}`);
+				out[k] = stored ? JSON.parse(stored) : undefined;
+			}
+			return out;
 		},
 		set: async (data: any) => {
 			Object.entries(data).forEach(([key, value]) => {
