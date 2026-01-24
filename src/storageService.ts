@@ -96,6 +96,11 @@ class StorageService {
 
 	async cacheQuote(quote: { text: string; author: string; source: string }): Promise<void> {
 		try {
+			// Don't cache error messages
+			if (this.isErrorQuote(quote)) {
+				console.warn('Refusing to cache error quote:', quote.text.substring(0, 50));
+				return;
+			}
 			const cachedQuote = {
 				...quote,
 				timestamp: Date.now()
@@ -106,12 +111,32 @@ class StorageService {
 		}
 	}
 
+	private isErrorQuote(quote: { text: string; author: string }): boolean {
+		// ZenQuotes returns error messages as "quotes" - detect and reject them
+		const errorPatterns = [
+			/too many requests/i,
+			/rate limit/i,
+			/auth key/i,
+			/unlimited access/i
+		]
+		return errorPatterns.some(pattern => 
+			pattern.test(quote.text) || pattern.test(quote.author)
+		)
+	}
+
 	async getCachedQuote(): Promise<{ text: string; author: string; source: string } | null> {
 		try {
 			const settings = await this.getSettings()
 			const cached = settings.cachedQuote
 			
 			if (!cached) return null
+			
+			// Reject error messages that were accidentally cached
+			if (this.isErrorQuote(cached)) {
+				// Clear the bad cache entry
+				await this.saveSettings({ cachedQuote: undefined })
+				return null
+			}
 			
 			// Cache is valid for 24 hours (daily quotes)
 			const isValid = Date.now() - cached.timestamp < 24 * 60 * 60 * 1000
@@ -191,6 +216,11 @@ class StorageService {
 
 	async cachePrefetchedQuote(quote: { text: string; author: string; source: string }): Promise<void> {
 		try {
+			// Don't cache error messages
+			if (this.isErrorQuote(quote)) {
+				console.warn('Refusing to cache error quote for prefetch:', quote.text.substring(0, 50));
+				return;
+			}
 			const prefetchedQuote = {
 				...quote,
 				timestamp: Date.now()
@@ -207,6 +237,13 @@ class StorageService {
 			const prefetched = settings.prefetchedQuote
 			
 			if (!prefetched) return null
+			
+			// Reject error messages that were accidentally cached
+			if (this.isErrorQuote(prefetched)) {
+				// Clear the bad prefetch entry
+				await this.saveSettings({ prefetchedQuote: undefined })
+				return null
+			}
 			
 			// Prefetched quotes are valid for 1 hour
 			const isValid = Date.now() - prefetched.timestamp < 60 * 60 * 1000

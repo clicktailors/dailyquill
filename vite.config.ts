@@ -1,12 +1,33 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { copyFileSync, mkdirSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 export default defineConfig(({ command }) => {
 	const isDev = command === 'serve'
+	const projectRoot = fileURLToPath(new URL('.', import.meta.url))
+	
+	const copyManifestPlugin = () => {
+		let outDir = 'dist'
+		
+		return {
+			name: 'copy-manifest',
+			apply: 'build',
+			configResolved(config) {
+				outDir = config.build.outDir
+			},
+			closeBundle() {
+				const outputDir = resolve(projectRoot, outDir)
+				mkdirSync(outputDir, { recursive: true })
+				copyFileSync(resolve(projectRoot, 'manifest.json'), resolve(outputDir, 'manifest.json'))
+			}
+		}
+	}
 	
 	return {
-		plugins: [react(), tailwindcss()],
+		plugins: [react(), tailwindcss(), copyManifestPlugin()],
 		root: '.',
 		server: {
 			port: 3000,

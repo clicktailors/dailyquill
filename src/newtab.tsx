@@ -545,7 +545,7 @@ function NewTabApp() {
 			// Ensure storage is used (for Chrome Web Store detection)
 			await testStorageUsage();
 
-			// Always try to get cached quote first
+			// Try to get cached quote first
 			const cachedQuote = await storageService.getCachedQuote();
 
 			if (cachedQuote) {
@@ -562,7 +562,17 @@ function NewTabApp() {
 				return;
 			}
 
-			// If no cached quote, fetch new one and cache it
+			// If no cached quote, try prefetched quote before making API call
+			const prefetchedQuote = await storageService.consumePrefetchedQuote();
+			if (prefetchedQuote) {
+				setQuote(prefetchedQuote);
+				setLoading(false);
+				// Prefetch the next quote in the background
+				quoteService.prefetchNextQuote();
+				return;
+			}
+
+			// If no cached or prefetched quote, fetch new one
 			const newQuote = await quoteService.getTodaysQuote();
 
 			// Cache the new quote

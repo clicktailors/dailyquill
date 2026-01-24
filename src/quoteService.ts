@@ -45,6 +45,20 @@ class QuoteService {
 		return fallbackQuotes[randomIndex]
 	}
 
+	// Check if a quote text/author looks like an API error message
+	private isErrorResponse(text: string, author: string): boolean {
+		const combined = `${text} ${author}`.toLowerCase()
+		const errorPatterns = [
+			'too many requests',
+			'rate limit',
+			'auth key',
+			'unlimited access',
+			'api error',
+			'zenquotes.io'  // Author is "ZenQuotes.io" for error messages
+		]
+		return errorPatterns.some(pattern => combined.includes(pattern))
+	}
+
 	async fetchFromZenQuotes(): Promise<Quote> {
 		try {
 			if (isDev) console.log('Fetching from ZenQuotes...');
@@ -55,16 +69,18 @@ class QuoteService {
 			const data = await response.json()
 			
 			if (data && data.length > 0) {
-				// ZenQuotes sometimes returns an error message as a "quote" body.
-				// Example: 429 responses may still include JSON like:
-				// [{ q: "Too many requests...", a: "ZenQuotes.io" }]
-				const maybeText = String(data[0]?.q ?? '')
-				if (/too many requests/i.test(maybeText)) {
-					throw new Error('ZenQuotes rate limited (message body)')
+				const quoteText = String(data[0]?.q ?? '')
+				const quoteAuthor = String(data[0]?.a ?? '')
+				
+				// ZenQuotes returns error messages as "quotes" with HTTP 200
+				// Example: { q: "Too many requests. Obtain an auth key...", a: "ZenQuotes.io" }
+				if (this.isErrorResponse(quoteText, quoteAuthor)) {
+					throw new Error(`ZenQuotes returned error as quote: ${quoteText.substring(0, 50)}`)
 				}
+				
 				const quote = {
-					text: data[0].q,
-					author: data[0].a,
+					text: quoteText,
+					author: quoteAuthor,
 					source: 'ZenQuotes'
 				};
 				if (isDev) console.log('ZenQuotes response:', quote);
@@ -136,13 +152,17 @@ class QuoteService {
 			const data = await response.json()
 			
 			if (data && data.length > 0) {
-				const maybeText = String(data[0]?.q ?? '')
-				if (/too many requests/i.test(maybeText)) {
-					throw new Error('ZenQuotes rate limited (message body)')
+				const quoteText = String(data[0]?.q ?? '')
+				const quoteAuthor = String(data[0]?.a ?? '')
+				
+				// ZenQuotes returns error messages as "quotes" with HTTP 200
+				if (this.isErrorResponse(quoteText, quoteAuthor)) {
+					throw new Error(`ZenQuotes today returned error as quote: ${quoteText.substring(0, 50)}`)
 				}
+				
 				const quote = {
-					text: data[0].q,
-					author: data[0].a,
+					text: quoteText,
+					author: quoteAuthor,
 					source: 'ZenQuotes (Today)'
 				};
 				if (isDev) console.log('Today\'s quote response:', quote);

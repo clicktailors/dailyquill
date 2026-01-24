@@ -1,15 +1,18 @@
 {
   "name": "daily-quote-extension",
-  "version": "1.0.0",
+  "version": "1.1.4",
   "description": "A Chrome extension that displays daily inspirational quotes",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "dev:extension": "vite build --watch",
-    "build": "vite build",
+    "build": "pnpm run build:extension",
     "preview": "vite preview",
-    "build:extension": "vite build && npm run copy-manifest",
-    "copy-manifest": "cp manifest.json dist/",
+    "build:extension": "vite build && node scripts/zip-extension.mjs",
+    "sync-version": "node scripts/sync-manifest-version.mjs",
+    "release:patch": "pnpm version patch --no-git-tag-version && pnpm run sync-version && pnpm run build:extension",
+    "release:minor": "pnpm version minor --no-git-tag-version && pnpm run sync-version && pnpm run build:extension",
+    "release:major": "pnpm version major --no-git-tag-version && pnpm run sync-version && pnpm run build:extension",
     "resize-icons": "node resize-icons.js"
   },
   "dependencies": {
