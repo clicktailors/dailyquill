@@ -46,6 +46,10 @@ npm run build:extension
    - Click "Load unpacked"
    - Select the `dist` folder
 
+### Web Preview
+
+The new tab page also runs as a regular website: settings are saved to `localStorage` instead of Chrome storage, and ZenQuotes is reached through a same-origin proxy (`vite.config.ts` in dev, `vercel.json` on Vercel). The repo is set up for Vercel, so every push gets a preview URL.
+
 ### Development Mode
 
 ```bash

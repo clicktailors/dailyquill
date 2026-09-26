@@ -38,6 +38,7 @@ const fallbackQuotes: Quote[] = [
 const isDev = import.meta.env.DEV || (typeof window !== 'undefined' && window.location.hostname === 'localhost');
 
 import { storageService } from './storageService'
+import { zenQuotesApiBase } from './runtime'
 import { sanitizeSources, type QuoteSourceId } from './sources'
 import {
 	bibleVerses,
@@ -93,7 +94,7 @@ class QuoteService {
 	async fetchFromZenQuotes(): Promise<Quote> {
 		try {
 			if (isDev) console.log('Fetching from ZenQuotes...');
-			const response = await fetch('https://zenquotes.io/api/random')
+			const response = await fetch(`${zenQuotesApiBase}/random`)
 			if (!response.ok) {
 				throw new Error(`ZenQuotes request failed: ${response.status} ${response.statusText}`)
 			}
@@ -220,7 +221,7 @@ class QuoteService {
 		try {
 			if (isDev) console.log('Getting today\'s quote...');
 			// Try to get today's quote from ZenQuotes
-			const response = await fetch('https://zenquotes.io/api/today')
+			const response = await fetch(`${zenQuotesApiBase}/today`)
 			if (!response.ok) {
 				throw new Error(`ZenQuotes today request failed: ${response.status} ${response.statusText}`)
 			}

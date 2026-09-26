@@ -1,5 +1,6 @@
 // Storage service for Chrome extension settings and cache
 import type { QuoteSourceId } from './sources'
+import { isExtension } from './runtime'
 
 export interface ExtensionSettings {
 	enabledSources?: QuoteSourceId[]
@@ -36,10 +37,7 @@ export interface ExtensionSettings {
 	}
 }
 
-// Development mode detection
-const isDev = import.meta.env.DEV || (typeof window !== 'undefined' && window.location.hostname === 'localhost');
-
-// Mock Chrome storage for development
+// Mock Chrome storage for the website version (dev server / preview)
 const mockChromeStorage = {
 	sync: {
 		get: async (key: string | string[]) => {
@@ -59,8 +57,8 @@ const mockChromeStorage = {
 	}
 };
 
-// Use mock storage in development, real Chrome storage in extension
-const storage = isDev ? mockChromeStorage : chrome.storage;
+// Use real Chrome storage in the extension, localStorage everywhere else
+const storage = isExtension ? chrome.storage : mockChromeStorage;
 
 class StorageService {
 	private defaultSettings: ExtensionSettings = {
