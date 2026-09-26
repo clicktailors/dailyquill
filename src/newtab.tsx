@@ -4,6 +4,7 @@ import { quoteService, type Quote } from "./quoteService";
 import { storageService } from "./storageService";
 import { quoteFonts, uiFonts, defaultFonts } from "./colors";
 import { SettingsPanel } from "./SettingsPanel";
+import { sanitizeSources, type QuoteSourceId } from "./sources";
 import SwipeQuote from "./components/SwipeQuote";
 import PlainQuote from "./components/PlainQuote";
 import "./newtab.css";
@@ -80,6 +81,9 @@ function NewTabApp() {
 	const [selectedSemanticTheme, setSelectedSemanticTheme] =
 		useState("primary");
 	const [quoteVisible, setQuoteVisible] = useState(true);
+	const [enabledSources, setEnabledSources] = useState<QuoteSourceId[]>(
+		sanitizeSources(undefined)
+	);
 
 	// Listen for dqEnabled state from background
 	useEffect(() => {
@@ -155,6 +159,7 @@ function NewTabApp() {
 					if (saved.fontSize !== undefined) {
 						setFontSize(saved.fontSize);
 					}
+					setEnabledSources(sanitizeSources(saved.enabledSources));
 				}
 			} catch (error) {
 				// Silently handle loading errors
@@ -411,6 +416,15 @@ function NewTabApp() {
 			// Prefetch the next quote in the background
 			quoteService.prefetchNextQuote();
 		}
+	};
+
+	// Switching sources discards cached quotes and shows one from the new selection
+	const handleEnabledSourcesChange = async (sources: QuoteSourceId[]) => {
+		const next = sanitizeSources(sources);
+		setEnabledSources(next);
+		await storageService.saveSettings({ enabledSources: next });
+		await storageService.clearQuoteCache();
+		await refreshQuote();
 	};
 
 	// Explicitly use storage to ensure Chrome Web Store detects it
@@ -707,6 +721,8 @@ function NewTabApp() {
 						onDarkFontChange={handleDarkFontChange}
 						fontFollowsTheme={fontFollowsTheme}
 						onFontFollowsThemeChange={handleFontFollowsThemeChange}
+						enabledSources={enabledSources}
+						onEnabledSourcesChange={handleEnabledSourcesChange}
 					/>
 				</div>
 			)}

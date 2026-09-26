@@ -16,6 +16,7 @@ A minimalist Chrome extension that displays daily inspirational quotes in a lite
 - 📖 **Literature-Inspired** - Elegant Cormorant Garamond typography
 - 🎨 **Paper-like Textures** - Subtle visual textures for enhanced reading
 - 🔄 **Daily Refresh** - New quotes with each session
+- 📚 **Quote Sources** - Mix ZenQuotes with the Bible, Qur'an, Bhagavad Gita, Dhammapada, Tao Te Ching, the Stoics and Confucius's Analects
 - ⚡ **Fast and Lightweight** - Optimized performance
 - 🧘 **Minimalist Focus** - No clocks, dates, or distractions
 - ··· **Discrete Settings** - Access theme options via minimal ellipsis button
@@ -44,6 +45,10 @@ npm run build:extension
    - Enable "Developer mode"
    - Click "Load unpacked"
    - Select the `dist` folder
+
+### Web Preview
+
+The new tab page also runs as a regular website: settings are saved to `localStorage` instead of Chrome storage, and ZenQuotes is reached through a same-origin proxy (`vite.config.ts` in dev, `vercel.json` on Vercel). The repo is set up for Vercel, so every push gets a preview URL.
 
 ### Development Mode
 

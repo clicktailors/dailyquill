@@ -32,7 +32,15 @@ export default defineConfig(({ command }) => {
 		server: {
 			port: 3000,
 			open: '/newtab.html',
-			host: true
+			host: true,
+			// Same-origin proxy for ZenQuotes, which doesn't send CORS headers
+			proxy: {
+				'/api/zenquotes': {
+					target: 'https://zenquotes.io',
+					changeOrigin: true,
+					rewrite: (path) => path.replace(/^\/api\/zenquotes/, '/api')
+				}
+			}
 		},
 		build: {
 			modulePreload: { polyfill: false },
@@ -46,10 +54,11 @@ export default defineConfig(({ command }) => {
 						return chunkInfo.name === 'background' ? 'background.js' : '[name]-[hash].js'
 					},
 					format: 'es',
-					// Bundle background script dependencies into a single file
+					// Code shared by the background worker and the new tab page lives in
+					// its own chunk, so the new tab page never runs background.ts itself
 					manualChunks: (id) => {
-						if (id.includes('background') || id.includes('quoteService') || id.includes('storageService')) {
-							return 'background'
+						if (/src\/(quoteService|storageService|runtime|sources\/)/.test(id)) {
+							return 'shared'
 						}
 					}
 				}
