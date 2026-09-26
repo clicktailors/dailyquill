@@ -48,7 +48,7 @@ export default defineConfig(({ command }) => {
 					format: 'es',
 					// Bundle background script dependencies into a single file
 					manualChunks: (id) => {
-						if (id.includes('background') || id.includes('quoteService') || id.includes('storageService')) {
+						if (id.includes('background') || id.includes('quoteService') || id.includes('storageService') || id.includes('/src/sources/')) {
 							return 'background'
 						}
 					}

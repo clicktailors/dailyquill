@@ -1,6 +1,8 @@
 // Storage service for Chrome extension settings and cache
+import type { QuoteSourceId } from './sources'
+
 export interface ExtensionSettings {
-	preferredSource: 'zenquotes' | 'quotegarden' | 'random'
+	enabledSources?: QuoteSourceId[]
 	showSource: boolean
 	favoriteQuotes: string[]
 	lastFetchTime: number
@@ -62,7 +64,7 @@ const storage = isDev ? mockChromeStorage : chrome.storage;
 
 class StorageService {
 	private defaultSettings: ExtensionSettings = {
-		preferredSource: 'random',
+		enabledSources: ['zenquotes'],
 		showSource: true,
 		favoriteQuotes: [],
 		lastFetchTime: 0,
@@ -251,6 +253,15 @@ class StorageService {
 		} catch (error) {
 			console.warn('Get prefetched quote error:', error);
 			return null;
+		}
+	}
+
+	// Drop the current and prefetched quotes, e.g. after the enabled sources change
+	async clearQuoteCache(): Promise<void> {
+		try {
+			await this.saveSettings({ cachedQuote: undefined, prefetchedQuote: undefined, lastFetchTime: 0 })
+		} catch (error) {
+			console.warn('Clear quote cache error:', error);
 		}
 	}
 

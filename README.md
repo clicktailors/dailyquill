@@ -16,6 +16,7 @@ A minimalist Chrome extension that displays daily inspirational quotes in a lite
 - 📖 **Literature-Inspired** - Elegant Cormorant Garamond typography
 - 🎨 **Paper-like Textures** - Subtle visual textures for enhanced reading
 - 🔄 **Daily Refresh** - New quotes with each session
+- 📚 **Quote Sources** - Mix ZenQuotes with the Bible, Qur'an, Bhagavad Gita, Dhammapada, Tao Te Ching, the Stoics and Confucius's Analects
 - ⚡ **Fast and Lightweight** - Optimized performance
 - 🧘 **Minimalist Focus** - No clocks, dates, or distractions
 - ··· **Discrete Settings** - Access theme options via minimal ellipsis button
