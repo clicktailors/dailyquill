@@ -17,6 +17,7 @@ interface SettingsPanelProps {
 	onSemanticThemeChange: (theme: string) => void;
 	id?: string;
 	selectedThemeMode: "system" | "light" | "dark";
+	isDark: boolean;
 	onThemeModeChange: () => void;
 	selectedQuoteFont: string;
 	onQuoteFontChange: (font: string) => void;
@@ -54,6 +55,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 	onSemanticThemeChange,
 	id,
 	selectedThemeMode,
+	isDark,
 	onThemeModeChange,
 	selectedQuoteFont,
 	onQuoteFontChange,
@@ -192,19 +194,13 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 							<label className={styles.sectionTitle}>Theme</label>
 							<div className={styles.buttonContainer}>
 								{(() => {
-									const isDarkMode =
-										selectedThemeMode === "dark" ||
-										(selectedThemeMode === "system" &&
-											window.matchMedia(
-												"(prefers-color-scheme: dark)"
-											).matches);
-									const currentCategory = isDarkMode
+									const currentCategory = isDark
 										? daisyThemeCategories.dark
 										: daisyThemeCategories.light;
-									const selectedTheme = isDarkMode
+									const selectedTheme = isDark
 										? selectedDarkTheme
 										: selectedLightTheme;
-									const onThemeChange = isDarkMode
+									const onThemeChange = isDark
 										? onDarkThemeChange
 										: onLightThemeChange;
 
@@ -263,15 +259,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 						<div className={styles.sectionContainer}>
 							<div className="flex items-center justify-between mb-4">
 								<label className={styles.sectionTitle}>
-									{fontFollowsTheme ? (() => {
-										const isDarkMode =
-											selectedThemeMode === "dark" ||
-											(selectedThemeMode === "system" &&
-												window.matchMedia(
-													"(prefers-color-scheme: dark)"
-												).matches);
-										return isDarkMode ? "Dark Mode Font" : "Light Mode Font";
-									})() : "Font"}
+									{fontFollowsTheme
+										? isDark ? "Dark Mode Font" : "Light Mode Font"
+										: "Font"}
 								</label>
 								<div className="flex items-center gap-2">
 									<span className="text-sm opacity-70">
@@ -289,20 +279,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 							<div className={styles.buttonContainer}>
 								{Object.entries(quoteFonts).map(
 									([key, font]) => {
-										// Determine current state based on mode
-										const isDarkMode =
-											selectedThemeMode === "dark" ||
-											(selectedThemeMode === "system" &&
-												window.matchMedia(
-													"(prefers-color-scheme: dark)"
-												).matches);
-										
 										const isSelected = fontFollowsTheme
-											? (isDarkMode ? selectedDarkFont === key : selectedLightFont === key)
+											? (isDark ? selectedDarkFont === key : selectedLightFont === key)
 											: selectedQuoteFont === key;
 										
 										const handleFontClick = fontFollowsTheme
-											? (isDarkMode ? onDarkFontChange : onLightFontChange)
+											? (isDark ? onDarkFontChange : onLightFontChange)
 											: onQuoteFontChange;
 										
 										return (

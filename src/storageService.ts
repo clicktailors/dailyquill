@@ -84,14 +84,20 @@ class StorageService {
 		}
 	}
 
-	async saveSettings(settings: Partial<ExtensionSettings>): Promise<void> {
-		try {
-			const currentSettings = await this.getSettings()
-			const newSettings = { ...currentSettings, ...settings }
-			await storage.sync.set({ settings: newSettings })
-		} catch (error) {
-			console.warn('Storage service error:', error);
-		}
+	// Serializes read-merge-write cycles so concurrent saves don't overwrite each other
+	private writeQueue: Promise<void> = Promise.resolve()
+
+	saveSettings(settings: Partial<ExtensionSettings>): Promise<void> {
+		this.writeQueue = this.writeQueue.then(async () => {
+			try {
+				const currentSettings = await this.getSettings()
+				const newSettings = { ...currentSettings, ...settings }
+				await storage.sync.set({ settings: newSettings })
+			} catch (error) {
+				console.warn('Storage service error:', error);
+			}
+		})
+		return this.writeQueue
 	}
 
 	async cacheQuote(quote: { text: string; author: string; source: string }): Promise<void> {

@@ -80,6 +80,10 @@ function NewTabApp() {
 	const [selectedSemanticTheme, setSelectedSemanticTheme] =
 		useState("primary");
 	const [quoteVisible, setQuoteVisible] = useState(true);
+	const [settingsLoaded, setSettingsLoaded] = useState(false);
+	const [systemPrefersDark, setSystemPrefersDark] = useState(
+		() => window.matchMedia("(prefers-color-scheme: dark)").matches
+	);
 
 	// Listen for dqEnabled state from background
 	useEffect(() => {
@@ -125,6 +129,15 @@ function NewTabApp() {
 					if (saved.themeMode) {
 						setSelectedThemeMode(saved.themeMode);
 					}
+					if (saved.selectedLightTheme) {
+						setSelectedLightTheme(saved.selectedLightTheme);
+					}
+					if (saved.selectedDarkTheme) {
+						setSelectedDarkTheme(saved.selectedDarkTheme);
+					}
+					if (saved.selectedSemanticTheme) {
+						setSelectedSemanticTheme(saved.selectedSemanticTheme);
+					}
 					if (saved.selectedQuoteFont) {
 						setSelectedQuoteFont(saved.selectedQuoteFont);
 					}
@@ -158,58 +171,60 @@ function NewTabApp() {
 				}
 			} catch (error) {
 				// Silently handle loading errors
+			} finally {
+				setSettingsLoaded(true);
 			}
 		};
 		loadSettings();
 	}, []);
 
-	// Load Google Fonts
+	// Persist settings when they change. Skipped until saved settings have
+	// loaded so the initial defaults never overwrite the user's choices.
 	useEffect(() => {
-		// Remove dynamic font loading - fonts will be loaded via CSS imports instead
-	}, [selectedQuoteFont, selectedUIFont]);
+		if (!settingsLoaded) return;
+		storageService.saveSettings({
+			themeMode: selectedThemeMode,
+			selectedLightTheme,
+			selectedDarkTheme,
+			selectedSemanticTheme,
+			selectedQuoteFont,
+			selectedUIFont,
+			selectedLightFont,
+			selectedDarkFont,
+			fontFollowsTheme,
+			backgroundLightnessLight,
+			backgroundLightnessDark,
+			fontSize,
+		});
+	}, [
+		settingsLoaded,
+		selectedThemeMode,
+		selectedLightTheme,
+		selectedDarkTheme,
+		selectedSemanticTheme,
+		selectedQuoteFont,
+		selectedUIFont,
+		selectedLightFont,
+		selectedDarkFont,
+		fontFollowsTheme,
+		backgroundLightnessLight,
+		backgroundLightnessDark,
+		fontSize,
+	]);
 
-	// Save font preferences when they change
+	// Track the OS color scheme in state so the UI re-renders when it changes
 	useEffect(() => {
-		storageService.saveSelectedQuoteFont(selectedQuoteFont);
-	}, [selectedQuoteFont]);
-
-	useEffect(() => {
-		storageService.saveSelectedUIFont(selectedUIFont);
-	}, [selectedUIFont]);
-
-	// Save theme-specific font preferences when they change
-	useEffect(() => {
-		storageService.saveSettings({ selectedLightFont });
-	}, [selectedLightFont]);
-
-	useEffect(() => {
-		storageService.saveSettings({ selectedDarkFont });
-	}, [selectedDarkFont]);
-
-	// Save font behavior preference when it changes
-	useEffect(() => {
-		storageService.saveSettings({ fontFollowsTheme });
-	}, [fontFollowsTheme]);
-
-	// Save background lightness when it changes
-	useEffect(() => {
-		storageService.saveSettings({ backgroundLightnessLight });
-	}, [backgroundLightnessLight]);
-
-	useEffect(() => {
-		storageService.saveSettings({ backgroundLightnessDark });
-	}, [backgroundLightnessDark]);
-
-	// Save font size when it changes
-	useEffect(() => {
-		storageService.saveSettings({ fontSize });
-	}, [fontSize]);
+		const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+		const handleChange = (e: MediaQueryListEvent) =>
+			setSystemPrefersDark(e.matches);
+		mediaQuery.addEventListener("change", handleChange);
+		return () => mediaQuery.removeEventListener("change", handleChange);
+	}, []);
 
 	// Helper to determine if dark mode is active
 	const isDark =
 		selectedThemeMode === "dark" ||
-		(selectedThemeMode === "system" &&
-			window.matchMedia("(prefers-color-scheme: dark)").matches);
+		(selectedThemeMode === "system" && systemPrefersDark);
 
 	// Apply fonts to CSS variables - handle both automatic and single font modes
 	useEffect(() => {
@@ -236,40 +251,12 @@ function NewTabApp() {
 		}
 	}, [selectedLightFont, selectedDarkFont, selectedQuoteFont, selectedUIFont, isDark, fontFollowsTheme]);
 
-	// Load saved theme mode on mount
-	useEffect(() => {
-		const loadThemeMode = async () => {
-			const saved = await storageService.getSettings();
-			if (saved && saved.themeMode) {
-				setSelectedThemeMode(saved.themeMode);
-			}
-		};
-		loadThemeMode();
-	}, []);
-
-	// Save theme mode when it changes
-	useEffect(() => {
-		storageService.saveSettings({ themeMode: selectedThemeMode });
-	}, [selectedThemeMode]);
-
 	// Cycle theme mode
 	const handleThemeModeChange = () => {
 		setSelectedThemeMode((prev) =>
 			prev === "system" ? "light" : prev === "light" ? "dark" : "system"
 		);
 	};
-
-	// Apply theme mode override
-	useEffect(() => {
-		if (selectedThemeMode === "system") {
-			document.documentElement.removeAttribute("data-color-scheme");
-		} else {
-			document.documentElement.setAttribute(
-				"data-color-scheme",
-				selectedThemeMode
-			);
-		}
-	}, [selectedThemeMode]);
 
 	// Handle font changes
 	const handleQuoteFontChange = (font: string) => {
@@ -294,94 +281,28 @@ function NewTabApp() {
 		setFontFollowsTheme(follows);
 	};
 
-	// Handle light theme change
 	const handleLightThemeChange = (theme: string) => {
 		setSelectedLightTheme(theme);
-		// Apply immediately if currently in light mode
-		if (
-			selectedThemeMode === "light" ||
-			(selectedThemeMode === "system" &&
-				!window.matchMedia("(prefers-color-scheme: dark)").matches)
-		) {
-			document.documentElement.setAttribute("data-theme", theme);
-		}
-		// Save to storage
-		storageService.saveSettings({ selectedLightTheme: theme });
 	};
 
-	// Handle dark theme change
 	const handleDarkThemeChange = (theme: string) => {
 		setSelectedDarkTheme(theme);
-		// Apply immediately if currently in dark mode
-		if (
-			selectedThemeMode === "dark" ||
-			(selectedThemeMode === "system" &&
-				window.matchMedia("(prefers-color-scheme: dark)").matches)
-		) {
-			document.documentElement.setAttribute("data-theme", theme);
-		}
-		// Save to storage
-		storageService.saveSettings({ selectedDarkTheme: theme });
 	};
 
-	// Handle semantic color theme change
 	const handleSemanticThemeChange = (theme: string) => {
 		setSelectedSemanticTheme(theme);
-		// Save to storage
-		storageService.saveSettings({ selectedSemanticTheme: theme });
 	};
 
-	// Apply appropriate DaisyUI theme based on mode
+	// Apply the DaisyUI theme for the active mode, and tell the browser the
+	// color scheme so native controls and scrollbars match
 	useEffect(() => {
-		const applyTheme = () => {
-			const isDarkMode =
-				selectedThemeMode === "dark" ||
-				(selectedThemeMode === "system" &&
-					window.matchMedia("(prefers-color-scheme: dark)").matches);
-			const themeToApply = isDarkMode
-				? selectedDarkTheme
-				: selectedLightTheme;
-			document.documentElement.setAttribute("data-theme", themeToApply);
-		};
-
-		applyTheme();
-
-		// Listen for system preference changes when in system mode
-		if (selectedThemeMode === "system") {
-			const mediaQuery = window.matchMedia(
-				"(prefers-color-scheme: dark)"
-			);
-			mediaQuery.addEventListener("change", applyTheme);
-			return () => mediaQuery.removeEventListener("change", applyTheme);
-		}
-	}, [selectedThemeMode, selectedLightTheme, selectedDarkTheme]);
-
-	// Load saved themes
-	useEffect(() => {
-		const loadThemes = async () => {
-			const saved = await storageService.getSettings();
-			if (saved) {
-				if (saved.selectedLightTheme) {
-					setSelectedLightTheme(saved.selectedLightTheme);
-				}
-				if (saved.selectedDarkTheme) {
-					setSelectedDarkTheme(saved.selectedDarkTheme);
-				}
-			}
-		};
-		loadThemes();
-	}, []);
-
-	// Load saved semantic theme
-	useEffect(() => {
-		const loadSemanticTheme = async () => {
-			const saved = await storageService.getSettings();
-			if (saved && saved.selectedSemanticTheme) {
-				setSelectedSemanticTheme(saved.selectedSemanticTheme);
-			}
-		};
-		loadSemanticTheme();
-	}, []);
+		const root = document.documentElement;
+		root.setAttribute(
+			"data-theme",
+			isDark ? selectedDarkTheme : selectedLightTheme
+		);
+		root.style.colorScheme = isDark ? "dark" : "light";
+	}, [isDark, selectedLightTheme, selectedDarkTheme]);
 
 	const refreshQuote = async () => {
 		// Try to use prefetched quote first for instant refresh
@@ -681,6 +602,7 @@ function NewTabApp() {
 						onClose={() => setShowSettings(false)}
 						id="settings-panel"
 						selectedThemeMode={selectedThemeMode}
+						isDark={isDark}
 						onThemeModeChange={handleThemeModeChange}
 						selectedQuoteFont={selectedQuoteFont}
 						onQuoteFontChange={handleQuoteFontChange}
