@@ -1,4 +1,4 @@
-// Quote service for fetching quotes from various APIs
+// Quote service for fetching quotes from the user's enabled sources
 export interface Quote {
 	text: string
 	author: string
@@ -38,6 +38,38 @@ const fallbackQuotes: Quote[] = [
 const isDev = import.meta.env.DEV || (typeof window !== 'undefined' && window.location.hostname === 'localhost');
 
 import { storageService } from './storageService'
+import { zenQuotesApiBase } from './runtime'
+import { sanitizeSources, type QuoteSourceId } from './sources'
+import {
+	bibleVerses,
+	quranVerses,
+	gitaVerses,
+	dhammapada,
+	taoTeChing,
+	stoics,
+	analects
+} from './sources/collections'
+
+// Books the live Bible source draws from, chosen for verses that stand on
+// their own (bible-api.com book ids → display names)
+const bibleBooks: Record<string, string> = {
+	PSA: 'Psalms',
+	PRO: 'Proverbs',
+	ECC: 'Ecclesiastes',
+	ISA: 'Isaiah',
+	MAT: 'Matthew',
+	JHN: 'John',
+	ROM: 'Romans',
+	'1CO': '1 Corinthians',
+	GAL: 'Galatians',
+	EPH: 'Ephesians',
+	PHP: 'Philippians',
+	COL: 'Colossians',
+	HEB: 'Hebrews',
+	JAS: 'James',
+	'1PE': '1 Peter',
+	'1JN': '1 John'
+}
 
 class QuoteService {
 	private getRandomFallback(): Quote {
@@ -62,7 +94,7 @@ class QuoteService {
 	async fetchFromZenQuotes(): Promise<Quote> {
 		try {
 			if (isDev) console.log('Fetching from ZenQuotes...');
-			const response = await fetch('https://zenquotes.io/api/random')
+			const response = await fetch(`${zenQuotesApiBase}/random`)
 			if (!response.ok) {
 				throw new Error(`ZenQuotes request failed: ${response.status} ${response.statusText}`)
 			}
@@ -93,59 +125,103 @@ class QuoteService {
 		}
 	}
 
-	async fetchFromQuoteGarden(): Promise<Quote> {
+	async fetchFromBible(): Promise<Quote> {
 		try {
-			if (isDev) console.log('Fetching from QuoteGarden...');
-			// Note: QuoteGarden API might require different endpoint or API key
-			// This is a placeholder for future implementation
-			const response = await fetch('https://quote-garden.herokuapp.com/api/v3/quotes/random')
+			if (isDev) console.log('Fetching from bible-api.com...');
+			const books = Object.keys(bibleBooks).join(',')
+			const response = await fetch(`https://bible-api.com/data/web/random/${books}`)
 			if (!response.ok) {
-				throw new Error(`QuoteGarden request failed: ${response.status} ${response.statusText}`)
+				throw new Error(`Bible request failed: ${response.status} ${response.statusText}`)
 			}
 			const data = await response.json()
-			
-			if (data && data.statusCode === 200 && data.data) {
-				const quote = {
-					text: data.data.quoteText.replace(/[""]/g, ''), // Remove quote marks
-					author: data.data.quoteAuthor,
-					source: 'Quote Garden'
-				};
-				if (isDev) console.log('QuoteGarden response:', quote);
-				return quote;
-			}
-			throw new Error('No quote data received')
+			const verse = data?.random_verse
+			const text = String(verse?.text ?? '').replace(/\s+/g, ' ').trim()
+			if (!text) throw new Error('No verse data received')
+
+			const bookName = typeof verse.book === 'string' && verse.book
+				? verse.book
+				: bibleBooks[verse.book_id] ?? verse.book_id
+			const quote = {
+				text,
+				author: `${bookName} ${verse.chapter}:${verse.verse}`,
+				source: 'Bible · World English Bible'
+			};
+			if (isDev) console.log('Bible response:', quote);
+			return quote;
 		} catch (error) {
-			if (isDev) console.warn('QuoteGarden fetch failed:', error);
+			if (isDev) console.warn('Bible fetch failed:', error);
 			throw error
 		}
 	}
 
-	async getRandomQuote(): Promise<Quote> {
-		if (isDev) console.log('Getting random quote...');
-		// Try multiple APIs in sequence
-		const apis = [
-			() => this.fetchFromZenQuotes(),
-			() => this.fetchFromQuoteGarden()
-		]
+	private pickRandom<T>(items: T[]): T {
+		return items[Math.floor(Math.random() * items.length)]
+	}
 
-		for (const api of apis) {
+	// Fetch a quote from one source. Bundled collections never fail; live
+	// sources fall back to a bundled collection of the same kind when possible.
+	async fetchFromSource(id: QuoteSourceId): Promise<Quote> {
+		switch (id) {
+			case 'zenquotes':
+				return this.fetchFromZenQuotes()
+			case 'bible':
+				try {
+					return await this.fetchFromBible()
+				} catch {
+					return this.pickRandom(bibleVerses)
+				}
+			case 'quran':
+				return this.pickRandom(quranVerses)
+			case 'gita':
+				return this.pickRandom(gitaVerses)
+			case 'dhammapada':
+				return this.pickRandom(dhammapada)
+			case 'taoteching':
+				return this.pickRandom(taoTeChing)
+			case 'stoics':
+				return this.pickRandom(stoics)
+			case 'confucius':
+				return this.pickRandom(analects)
+		}
+	}
+
+	private async getEnabledSources(): Promise<QuoteSourceId[]> {
+		const settings = await storageService.getSettings()
+		return sanitizeSources(settings.enabledSources)
+	}
+
+	// Try the enabled sources in random order until one succeeds
+	private async fetchFromEnabledSources(sources: QuoteSourceId[]): Promise<Quote> {
+		const shuffled = [...sources].sort(() => Math.random() - 0.5)
+		for (const id of shuffled) {
 			try {
-				return await api()
+				return await this.fetchFromSource(id)
 			} catch (error) {
 				continue
 			}
 		}
 
-		// If all APIs fail, return a random fallback quote
-		if (isDev) console.log('All APIs failed, using fallback quote');
+		// If all sources fail, return a random fallback quote
+		if (isDev) console.log('All sources failed, using fallback quote');
 		return this.getRandomFallback()
 	}
 
+	async getRandomQuote(): Promise<Quote> {
+		if (isDev) console.log('Getting random quote...');
+		return this.fetchFromEnabledSources(await this.getEnabledSources())
+	}
+
 	async getTodaysQuote(): Promise<Quote> {
+		const sources = await this.getEnabledSources()
+		// ZenQuotes offers a quote of the day; only use it when it's the sole source
+		if (sources.length > 1 || sources[0] !== 'zenquotes') {
+			return this.fetchFromEnabledSources(sources)
+		}
+
 		try {
 			if (isDev) console.log('Getting today\'s quote...');
 			// Try to get today's quote from ZenQuotes
-			const response = await fetch('https://zenquotes.io/api/today')
+			const response = await fetch(`${zenQuotesApiBase}/today`)
 			if (!response.ok) {
 				throw new Error(`ZenQuotes today request failed: ${response.status} ${response.statusText}`)
 			}

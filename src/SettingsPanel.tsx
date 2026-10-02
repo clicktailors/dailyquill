@@ -9,6 +9,12 @@ import {
 import DayNightSwitch from "./components/DayNightSwitch";
 import { MoonIcon, SunIcon } from "./components/Icons";
 import { SupportModal } from "./components/SupportModal";
+import {
+	quoteSources,
+	quoteSourceCategories,
+	type QuoteSourceCategory,
+	type QuoteSourceId,
+} from "./sources";
 
 interface SettingsPanelProps {
 	isOpen: boolean;
@@ -46,6 +52,8 @@ interface SettingsPanelProps {
 		regular: { base: string; md: string; lg: string };
 		monospace: { base: string; md: string; lg: string };
 	}[];
+	enabledSources: QuoteSourceId[];
+	onEnabledSourcesChange: (sources: QuoteSourceId[]) => void;
 }
 
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({
@@ -78,6 +86,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 	fontSize,
 	onFontSizeChange,
 	fontSizeSteps,
+	enabledSources,
+	onEnabledSourcesChange,
 }) => {
 	// Shared style constants
 	const styles = {
@@ -338,6 +348,79 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 									{fontSizeSteps[fontSize]?.name}
 								</div>
 							</div>
+						</div>
+						<div className={styles.divider} />
+						<div className={styles.sectionContainer}>
+							<label className={styles.sectionTitle}>
+								Quote Sources
+							</label>
+							{(
+								Object.keys(
+									quoteSourceCategories
+								) as QuoteSourceCategory[]
+							).map((category) => (
+								<div key={category} className="flex flex-col gap-2 mb-4">
+									<span className="text-xs uppercase tracking-wide opacity-60">
+										{quoteSourceCategories[category]}
+									</span>
+									{quoteSources
+										.filter(
+											(source) =>
+												source.category === category
+										)
+										.map((source) => {
+											const isEnabled =
+												enabledSources.includes(
+													source.id
+												);
+											// Keep at least one source enabled
+											const isLastEnabled =
+												isEnabled &&
+												enabledSources.length === 1;
+											return (
+												<label
+													key={source.id}
+													className="flex items-center justify-between gap-4 cursor-pointer"
+												>
+													<span className="flex flex-col">
+														<span className="text-sm font-medium">
+															{source.name}
+														</span>
+														<span className="text-xs opacity-60">
+															{source.description}
+														</span>
+													</span>
+													<input
+														type="checkbox"
+														className="toggle toggle-primary toggle-sm"
+														checked={isEnabled}
+														disabled={isLastEnabled}
+														title={
+															isLastEnabled
+																? "At least one source must stay enabled"
+																: undefined
+														}
+														onChange={(e) =>
+															onEnabledSourcesChange(
+																e.target.checked
+																	? [
+																			...enabledSources,
+																			source.id,
+																	  ]
+																	: enabledSources.filter(
+																			(id) =>
+																				id !==
+																				source.id
+																	  )
+															)
+														}
+														aria-label={`Show quotes from ${source.name}`}
+													/>
+												</label>
+											);
+										})}
+								</div>
+							))}
 						</div>
 						<div className={styles.divider} />
 						<div className={styles.sectionContainer}>
